@@ -26,33 +26,31 @@ git clone git@github.com:networknext/sdk.git
 /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 ```
 
-* Install dependencies via brew:
+* Install dependencies via brew (of these only libsodium is a runtime dependency):
 ```
 brew install libsodium pkg-config golang curl
 ```
 
 * Install premake5
+```
+blahblahblah
+```
 
-* Generate the makefiles with premake: `premake5 gmake`
+* Generate the makefiles with premake:
+```
+premake5 gmake
+```
 
 * Make everything
 ```
 make
 ```
 
-* 
-
 * Run the server:
 ```
 ./bin/server
 ```
-
-* Switch to another terminal and run the client:
-```
-./bin/client
-```
-
-* You should see:
+You should see something like:
 ```
 macbook:sdk glenn$ ./bin/server
 
@@ -63,7 +61,12 @@ Welcome to Network Next!
 0.009250: info: server resolving hostname v3.networknext.com
 0.110721: info: server resolved hostname to 146.148.45.204:40000
 ```
-and
+
+* Switch to another terminal and run the client:
+```
+./bin/client
+```
+You should see something like:
 ```
 macbook:sdk glenn$ ./bin/client
 
