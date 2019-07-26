@@ -6,7 +6,7 @@
 
 * Create an account on GitHub if you don't have one already: https://github.com
 
-* Clone the Network Next SDK git repository: 
+* Clone the SDK git repository: 
 ```
 git clone git@github.com:networknext/sdk.git
 ```
