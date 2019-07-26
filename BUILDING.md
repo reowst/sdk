@@ -4,7 +4,7 @@
 
 * [Download the latest SDK source code](https://github.com/networknext/sdk/archive/master.zip)
 
-OR
+_OR..._
 
 * [Install git](https://git-scm.com/)
 
