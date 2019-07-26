@@ -6,7 +6,7 @@
 
 OR
 
-* [Install git](https://git-scm.com/) _(Not necessary on Mac)_
+* [Install git]
 
 * Create an account on GitHub if you don't have one already: https://github.com
 
