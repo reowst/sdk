@@ -101,8 +101,8 @@ These instructions are designed for Ubuntu 14.04-18.04.
 
    ```shell
    curl -L -O https://github.com/premake/premake-core/releases/download/v5.0.0-alpha14/premake-5.0.0-alpha14-src.zip && \
-   unzip premake-*.zip && \
-   cd premake-* && \
+   unzip premake-5.0.0-alpha14-src.zip && \
+   cd premake-5.0.0-alpha14 && \
    cd build/gmake.unix && \
    make && \
    sudo mv ../../bin/release/premake5 /usr/local/bin && \
