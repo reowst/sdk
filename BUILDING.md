@@ -11,6 +11,8 @@
 git clone git@github.com:networknext/sdk.git
 ```
 
+* OR... [download the latest SDK source code here](https://github.com/networknext/sdk/archive/master.zip)
+
 ## If you are developing on Mac
 
 * Install brew:
