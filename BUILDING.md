@@ -6,7 +6,7 @@
 
 OR
 
-* [Install git]
+* [Install git](https://git-scm.com/)
 
 * Create an account on GitHub if you don't have one already: https://github.com
 
@@ -22,7 +22,7 @@ git clone git@github.com:networknext/sdk.git
 /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 ```
 
-* Install dependencies via brew (of these only libsodium is a runtime dependency):
+* Install dependencies via brew _(only libsodium is an actual runtime dependency)_:
 ```
 brew install libsodium pkg-config golang curl
 ```
@@ -72,7 +72,7 @@ Welcome to Network Next!
 0.021332: info: client opened session to 127.0.0.1:32202
 ```
 
-* Go to USAGE.md for next steps!
+* _Go to USAGE.md for next steps!_
 
 ## If you are developing on Windows
 
