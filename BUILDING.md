@@ -6,10 +6,7 @@
 
 * [Install git](https://git-scm.com/) _(Not necessary on Mac)_
 
-* Clone the Network Next SDK git repository: 
-```
-git clone git@github.com:networknext/sdk.git
-```
+* Clone the Network Next SDK git repository: `git clone git@github.com:networknext/sdk.git`
 
 ## If you are developing on Windows
 
