@@ -29,7 +29,7 @@ brew install libsodium pkg-config golang wget
 
 * Install premake5
 ```
-wget https://github.com/premake/premake-core/releases/download/v5.0.0-alpha14/premake-5.0.0-alpha14-linux.tar.gz && tar -zxvf premake-*.tar.gz && rm premake-*.tar.gz
+wget https://github.com/premake/premake-core/releases/download/v5.0.0-alpha14/premake-5.0.0-alpha14-macosx.tar.gz && tar -zxvf premake-*.tar.gz && rm premake-*.tar.gz
 ```
 
 * Generate the makefiles with premake:
