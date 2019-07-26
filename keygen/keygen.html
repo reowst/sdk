@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+    <title>README</title>
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+      integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T"
+      crossorigin="anonymous"
+    />
+    <style type="text/css">
+      h2 {
+        margin-top: 1.5em;
+      }
+      h1 {
+        padding-bottom: 0.5em;
+        margin-bottom: 0.5em;
+        border-bottom: solid 2px #ccc;
+      }
+      h3 {
+        font-size: 110%;
+      }
+    </style>
+  </head>
+  <body>
+    <main role="main" class="container pt-5">
+      <h1 id="networknextkeygentool">Network Next keygen tool</h1>
+<h2 id="usingprebuiltbinaries">Using prebuilt binaries</h2>
+<p>All prebuilt binaries are for 64-bit operating systems. If you have a different architecture, refer to "Building from source" below.</p>
+<h3 id="windows">Windows</h3>
+<p>Usage: <code>keygen.exe</code></p>
+<h3 id="macos">macOS</h3>
+<p>You must have libsodium 1.0.18 installed. If you don't, use <code>brew install libsodium</code> to install it. If you can't install this version, see "Building from source" below.</p>
+<p>Usage: <code>./keygen_mac</code></p>
+<h3 id="linuxubuntu18042lts">Linux (Ubuntu 18.04.2 LTS)</h3>
+<p>You must have libsodium 1.0.16-2 installed. If you don't, use <code>sudo apt install libsodium23</code> to install it. If you can't install this version, see "Building from source" below.</p>
+<p>Usage: <code>./keygen_linux</code></p>
+<h2 id="buildingfromsource">Building from source</h2>
+<h3 id="windows-1">Windows</h3>
+<ol>
+<li>Install MinGW-w64 and make sure GCC is on your path.</li>
+<li><code>cd src &amp;&amp; go build keygen.go keygen_windows.go</code></li>
+</ol>
+<h3 id="macos-1">macOS</h3>
+<ol>
+<li><code>brew install libsodium pkg-config</code></li>
+<li><code>cd src &amp;&amp; go build keygen.go keygen_unix.go</code></li>
+</ol>
+<h3 id="linux">Linux</h3>
+<ol>
+<li><code>sudo apt install pkg-config libsodium-dev libsodium23</code></li>
+<li><code>cd src &amp;&amp; go build keygen.go keygen_unix.go</code></li>
+</ol>
+    </main>
+  </body>
+</html>
