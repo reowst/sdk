@@ -26,7 +26,16 @@
 brew install libsodium pkg-config golang
 ```
 
-* Install latest premake5
+* Install premake5
+
+* Generate the makefiles with premake: `premake5 gmake`
+
+* Make everything
+```
+make
+```
+
+* Binaries are in `./bin/client` and `./bin/server`
 
 ## Running Next 
 
