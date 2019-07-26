@@ -89,4 +89,51 @@ Welcome to Network Next!
 
 ## If you are developing on Linux
 
-* ...
+These instructions are designed for Ubuntu 14.04-18.04.
+
+* Install GCC:
+
+   ```shell
+   sudo apt install build-essential
+   ```
+
+* Install premake:
+
+   ```shell
+   curl -L -O https://github.com/premake/premake-core/releases/download/v5.0.0-alpha14/premake-5.0.0-alpha14-src.zip && \
+   unzip premake-5.0.0-alpha14-src.zip && \
+   cd premake-5.0.0-alpha14 && \
+   cd build/gmake.unix && \
+   make && \
+   sudo mv ../../bin/release/premake5 /usr/local/bin && \
+   cd ../../../ && \
+   rm -rf premake-*
+   ```
+
+* If you want to build 32-bit:
+   ```shell
+   sudo dpkg --add-architecture i386
+   sudo apt update
+   sudo apt install gcc-multilib g++-multilib
+   ```
+
+* Choose a build configuration:
+   - `debug_static32`
+   - `debug_shared32`
+   - `debug_static64`
+   - `debug_shared64`
+   - `release_static32`
+   - `release_shared32`
+   - `release_static64`
+   - `release_shared64`
+
+   Then:
+
+    ```shell
+    premake5 gmake
+    make config=<config>
+    ./bin/server &
+    ./bin/client
+    ```
+
+* [Go to USAGE.md for next steps](https://github.com/networknext/sdk/blob/master/USAGE.md)
