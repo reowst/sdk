@@ -22,7 +22,7 @@ git clone git@github.com:networknext/sdk.git
 xcode-select --install
 ```
 
-* Install brew:
+* Install [brew](https://brew.sh):
 ```
 /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 ```
@@ -32,7 +32,7 @@ xcode-select --install
 brew install libsodium pkg-config golang wget
 ```
 
-* Install premake5
+* Install [premake5](https://premake.github.io/download.html):
 ```
 wget https://github.com/premake/premake-core/releases/download/v5.0.0-alpha14/premake-5.0.0-alpha14-macosx.tar.gz && tar -zxvf premake-*.tar.gz && rm premake-*.tar.gz
 ```
