@@ -32,7 +32,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define NEXT_VERSION_FULL                                  "v3.1.0"
+#define NEXT_VERSION_FULL                                   "3.1.0"
 #define NEXT_VERSION_MAJOR                                      "3"
 #define NEXT_VERSION_MINOR                                      "1"
 #define NEXT_VERSION_PATCH                                      "0"
