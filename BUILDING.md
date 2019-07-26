@@ -72,7 +72,7 @@ Welcome to Network Next!
 0.021332: info: client opened session to 127.0.0.1:32202
 ```
 
-* _Go to USAGE.md for next steps!_
+* [Go to USAGE.md for next steps!](https://github.com/networknext/sdk/blob/master/USAGE.md)
 
 ## If you are developing on Windows
 
