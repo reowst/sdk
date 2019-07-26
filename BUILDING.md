@@ -2,6 +2,10 @@
 
 ## All platforms
 
+* [Download the latest SDK source code](https://github.com/networknext/sdk/archive/master.zip)
+
+OR
+
 * [Install git](https://git-scm.com/) _(Not necessary on Mac)_
 
 * Create an account on GitHub if you don't have one already: https://github.com
@@ -10,8 +14,6 @@
 ```
 git clone git@github.com:networknext/sdk.git
 ```
-
-* OR... [download the latest SDK source code here](https://github.com/networknext/sdk/archive/master.zip)
 
 ## If you are developing on Mac
 
