@@ -17,6 +17,11 @@ git clone git@github.com:networknext/sdk.git
 
 ## If you are developing on Mac
 
+* Install the XCode command line development tools if you haven't already:
+```
+xcode-select --install
+```1
+
 * Install brew:
 ```
 /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
