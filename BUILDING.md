@@ -22,9 +22,9 @@ git clone git@github.com:networknext/sdk.git
 /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 ```
 
-* Install dependencies via brew _(only libsodium is an actual runtime dependency)_:
+* Install dependencies via brew:
 ```
-brew install libsodium pkg-config golang curl
+brew install libsodium pkg-config golang wget
 ```
 
 * Install premake5
