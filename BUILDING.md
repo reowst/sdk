@@ -10,7 +10,7 @@
 
 ## If you are developing on Windows
 
-* [Install VS Community 2019](https://visualstudio.microsoft.com/vs/community/) if you don't already have a visual studio environment .
+* [Install VS Community 2019](https://visualstudio.microsoft.com/vs/community/) if you don't already have a visual studio environment.
 
 ...
 
