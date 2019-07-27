@@ -14,11 +14,15 @@ Network Next improves the quality of network transit from players around the wor
 
 ## How does Network Next work?
 
-Network Next SDK steers UDP game traffic across the best path from each player to the game server via centrally planned routing system driven by a marketplace bidding system run once every 10 seconds per-player.
+Network Next SDK steers UDP game traffic across the best path from players to game servers via centrally planned routing driven by a marketplace bidding system run once every 10 seconds per-player.
 
 ## Does Network Next violate Network Neutrality?
 
-No. Routing via bidding process ensures which ensures that we remain _supplier neutral_ and always steer traffic across the route that has the best performance at the best price, without favoring any one supplier or buyer over another.
+No. Routing via bidding process ensures which ensures that we remain _supplier neutral_ and always steer traffic across the route with the best performance at the best price, without favoring any one buyer or supplier over another.
+
+## Can suppliers specify a different price depending on the buyer?
+
+No. Suppliers cannot identify buyers on Network Next and therefore cannot provide one price for one buyer, and a different price for another. Suppliers may only compete on performance and price.
 
 ## What sort of improvements can Network Next provide?
 
@@ -30,7 +34,7 @@ We've seen players with over 1000ms round trip time reduced to 50ms and players 
 
 ## How much does Network Next cost?
 
-Bandwidth for players where we provide significant improvement costs around 10c per-gigabyte on average right now, but Network Next targets only the bottom 10% of active sessions, giving an amortized cost of approximately 1c per-GB.
+Bandwidth for players where we provide significant improvement costs around 10c per-gigabyte on average right now, but Network Next typically targets only the bottom 10% that need the most help, giving an amortized cost of 1c per-GB.
 
 ## Do players have to pay to use Network Next?
 
@@ -48,7 +52,7 @@ Please contact us at sales@networknext.com and we'll onboard you for a free tria
 
 ## What games use Network Next?
 
-Network Next is in production with [Rocket League](https://rocketleague.com) for several months now, and we accelerate millions of players every day. We're also live with several other games that aren't announced yet!
+Network Next is in production with [Rocket League](https://rocketleague.com) for several months now, and we accelerate millions of players every day. We're also live with several other games we haven't announced yet!
 
 ## What suppliers work with Network Next?
 
