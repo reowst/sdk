@@ -137,14 +137,3 @@ Please talk to us so we can understand your use case sales@networknext.com
 ## Can I use Network Next to accelerate my WebRTC game?
 
 Not yet. We are actively investigating this as an option. Please talk to us so we can understand your use case sales@networknext.com
-
-## What about Network Neutrality?
-
-We care deeply about Network Neutrality and have designed our marketplace to be as neutral as possible.
-
-In addition, suppliers cannot identify buyers and therefore act in an anti-competitive manner against buyers.
-
-We think Network Next is a way to boost network p
-
-## Do players have to pay to use Netowrk Next?
-
