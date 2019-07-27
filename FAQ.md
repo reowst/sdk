@@ -6,7 +6,7 @@ Network Next is a marketplace for premium network transit.
 
 We sell 10 second slices of access to private networks via a two-sided marketplace, we're basically _Google Adwords for Packets_.
 
-The results is improved network transit from players around the world to your game servers. Players experience lower latency, fewer hitches, and less packet loss when they play over Network Next.
+The result is improved network transit from players around the world to your game servers. Players experience lower latency, fewer hitches, and less packet loss when they play over Network Next.
 
 Players that we can't improve (yet), or are _good enough_ according to your requirements, take the public internet and are _free_.
 
