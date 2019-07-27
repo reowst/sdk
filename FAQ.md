@@ -126,9 +126,7 @@ No. We only support acceleration of client/server traffic between clients and de
 
 ## Can I use Network Next to accelerate my TCP game?
 
-Not yet. In the rare cases where TCP makes sense, we may be able to provide some benefit via a TCP shim that reduces the impact of packet loss induced head of line blocking across your client/server connection, but this has not been implemented yet. 
-
-Please talk to us so we can understand your use case sales@networknext.com
+Not yet. In cases where TCP makes sense, we may be able to provide benefit via a TCP shim that reduces the impact of packet loss induced head of line blocking across your client/server connection, but this is not implemented yet. Pleasoe contact sales@networknext.com so we can understand your use case.
 
 ## Can I use Network Next to accelerate my WebRTC game?
 
