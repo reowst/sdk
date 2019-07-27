@@ -48,8 +48,6 @@ Therefore, we bill on the envelope of traffic your games uses, rather than the u
 
 Each month we sum up the total of 10 second bandwidth slices served by all suppliers for a game (often multiple suppliers are involved in each route), and that is the total amount we bill to to the game developer.
 
-Game developers don't pay for any routes that don't meet your quality expectations, or for players for whom we aren't able to provide significant benefit (according to their own definition of what significant benefit may be).
-
 ## How can I get access to the Network Next portal
 
 Please contact us at sales@networknext.com and we'll onboard you for a free trial.
@@ -64,7 +62,7 @@ We work with top infrastructure suppliers such as:
 * [Zenlayer](https://zenlayer.com)
 * [Multiplay](https://multiplay.com)
 * [I3D](https://i3d.com)
-* [Vultr.com]
+* [Vultr.com](https://vultr.com)
 * [GameServers.com](https://gameservers.com)
 * [AWS](https://aws.amazon.com)
 * [Google](https://cloud.google.com/)
@@ -80,7 +78,7 @@ We support game servers hosted by:
 
 * [Multiplay](https://multiplay.com)
 * [I3D](https://i3d.com)
-* [Vultr.com]
+* [Vultr.com](https://vultr.com)
 * [GameServers.com](https://gameservers.com)
 * [AWS](https://aws.amazon.com)
 * [Google](https://cloud.google.com/)
@@ -106,11 +104,11 @@ Please contact sales@networknext.com so we can understand your use case. Thanks!
 
 ## What languages is the Network Next SDK support?
 
-The Network Next SDK is written in low-level C style C++. It's trivial to call from other additional languages. Please let us know if you need a shim for a different language via sales@networknext.com, or get involved and contribute that binding to our open source SDK here! https://github.com/networknext/sdk
+The Network Next SDK is written in low-level C style C++ so it's easy to call from other additional languages. Please get involved and contribute a binding for your preferred language to our open source SDK! https://github.com/networknext/sdk
 
 ## What locations are supported by Network Next?
 
-Network Next is now deployed worldwide. Please contact sales@networknext.com to discuss a trial so we can ensure that we optimally target the location of your game's userbase.
+Network Next is deployed worldwide. Please contact sales@networknext.com to discuss a trial so we can ensure that we optimally target the location of your game's userbase.
 
 ## Do you have an Unreal Engine 4 Plugin?
 
@@ -137,3 +135,7 @@ Please talk to us so we can understand your use case sales@networknext.com
 ## Can I use Network Next to accelerate my WebRTC game?
 
 Not yet. We are actively investigating this as an option. Please talk to us so we can understand your use case sales@networknext.com
+
+# What happens if Network Next ever goes down?
+
+If our SDK cannot talk to our backend platform for any reason, players automatically fall back to the public internet and are _free_.
