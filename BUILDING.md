@@ -83,9 +83,53 @@ Welcome to Network Next!
 
 * [Install VS Community 2019](https://visualstudio.microsoft.com/vs/community/) if you don't already have a visual studio environment.
 
-* ...
+* Download [premake5.exe](https://github.com/premake/premake-core/releases/download/v5.0.0-alpha14/premake-5.0.0-alpha14-windows.zip) and put it next to `premake5.lua` in your copy of the SDK.
 
-* ...
+* Open a Command Prompt in the folder where you cloned the SDK, and run:
+
+```
+premake5 vs2019
+```
+
+* Open the generated `next.sln` solution in Visual Studio (you can just double-click on `next.sln` and Visual Studio should open it).
+
+* Under `Build` in the menu bar, click `Build Solution...` (or press `Ctrl-Shift-B`).
+
+* In the Solution Explorer (typically on the right-hand side of the screen), right-click on `Solution 'next' (4 of 4 projects)` and click on `Set StartUp Projects...`.
+
+* In the window that opens, select `Multiple startup projects:`.
+
+* Next to `client`, click on (`Action`) `None` and change it to `Start`.
+
+* Next to `server`, click on (`Action`) `None` and change it to `Start`.
+
+* Click `OK`.
+
+* In the toolbar click on `> Start` (the green arrow), or press `F5`.
+
+* You should see two console windows open; one for the server, and one for the client.
+
+* You may get a Windows Security Alert; if you do, click `Allow access` (this is the firewall access prompt since the server is starting).
+
+* The server and client should start up, with outputs similar to the following respectively:
+
+```
+Welcome to Network Next!
+
+0.025304: info: server sdk version is 3.1.0
+0.026550: info: server started on 127.0.0.1:32202
+0.025438: info: server resolving hostname v3.networknext.com
+0.061885: info: server resolved hostname to 35.202.139.187:40000
+```
+
+```
+Welcome to Network Next!
+
+0.027818: info: client sdk version is 3.1.0
+0.054300: info: client opened session to 127.0.0.1:32202
+```
+
+* [Go to USAGE.md for next steps](https://github.com/networknext/sdk/blob/master/USAGE.md)
 
 ## If you are developing on Linux
 
