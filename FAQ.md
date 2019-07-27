@@ -58,18 +58,19 @@ Please contact us at sales@networknext.com and we'll onboard you for a free tria
 
 We work with top infrastructure suppliers such as:
 
-* Limelight
-* Stackpath
-* Packet
-* Zenlayer
-* Multiplay
-* I3D
-* Vultr.com
-* AWS
-* Google
-* Azure
-* Oracle Cloud
-* IBM Cloud
+* [Limelight](https://limelight.com)
+* [Stackpath](https://stackpath.com)
+* [Packet](https://packet.com)
+* [Zenlayer](https://zenlayer.com)
+* [Multiplay](https://multiplay.com)
+* [I3D](https://i3d.com)
+* [Vultr.com]
+* [GameServers.com](https://gameservers.com)
+* [AWS](https://aws.amazon.com)
+* [Google](https://cloud.google.com/)
+* [Azure](https://azure.microsoft.com)
+* [Oracle Cloud](https://cloud.oracle.com/)
+* [IBM Cloud](https://ibm.com/cloud)
 
 _And many more we can't talk about yet!_
 
@@ -77,12 +78,13 @@ _And many more we can't talk about yet!_
 
 We support game servers hosted by:
 
-* Multiplay
-* I3D
-* Vultr.com
-* AWS
-* Google
-* Azure
+* [Multiplay](https://multiplay.com)
+* [I3D](https://i3d.com)
+* [Vultr.com]
+* [GameServers.com](https://gameservers.com)
+* [AWS](https://aws.amazon.com)
+* [Google](https://cloud.google.com/)
+* [Azure](https://azure.microsoft.com)
 
 If you'd like to evaluate Network Next but you host game servers somewhere else, please let us know at sales@networknext.com
 
@@ -101,6 +103,10 @@ Access to console platform support requires proof that you are a registered deve
 ## What if my platform isn't listed above
 
 Please contact sales@networknext.com so we can understand your use case. Thanks!
+
+## What languages is the Network Next SDK support?
+
+The Network Next SDK is written in low-level C style C++. It's trivial to call from other additional languages. Please let us know if you need a shim for a different language via sales@networknext.com, or get involved and contribute that binding to our open source SDK here! https://github.com/networknext/sdk
 
 ## What locations are supported by Network Next?
 
