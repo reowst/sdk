@@ -1,4 +1,4 @@
-# Network Next SDK
+# Network Next FAQ
 
 ## What is Network Next?
 
@@ -16,7 +16,7 @@ Network Next SDK steers UDP game traffic across the best path from each player t
 
 We do this by steering traffic across overlay routers run by our suppliers via centrally planned routing system, driven by a marketplace bidding system run once every 10 seconds per-player.
 
-This way we remain neutral and always steer traffic across the route that has the best performance at the best price.
+This way we remain _supplier neutral_ and always steer traffic across the route that has the best performance at the best price.
 
 ## What sort of improvements can Network Next provide?
 
@@ -28,9 +28,9 @@ We've seen players have 400ms latency reduced to 200ms or less, and players with
 
 ## How much does Network Next cost?
 
-On average, bandwidth costs 10c per-gigabyte right now, but we expect this to reduce over time.
+Network Next by targets only the bottom 10% of your playerbase having a really bad experience, so it is very cost effective. So you don't pay anything for the 90% of players who already have a good connection to your server.
 
-Importantly, Network Next by default targets at the bottom 10% of your playerbase having a bad experience, so it is very cost effective. So you don't pay anything for the 90% of players who already have a good connection to your server.
+On average, bandwidth for players where we provide significant improvement costs 10c per-gigabyte right now, but we expect this to reduce over time.
 
 ## How does billing work?
 
@@ -40,7 +40,7 @@ Each month we sum up the total of 10 second bandwidth slices served by all suppl
 
 ## How can I get access to the Network Next portal
 
-Please contact us at sales@networknext.com and we can onboard you for a free trial.
+Please contact us at sales@networknext.com and we'll onboard you for a free trial.
 
 ## What suppliers does Network Next work with?
 
@@ -72,7 +72,7 @@ We support game servers hosted by:
 * Google
 * Azure
 
-If you'd like to tryout Network Next but you host your game servers somewhere else, please let us know. 
+If you'd like to evaluate Network Next but you host your game servers somewhere else, please let us know at sales@networknext.com
 
 ## What platforms do you support?
 
@@ -104,10 +104,8 @@ No. We only support acceleration of client/server traffic between clients and de
 
 ## Can I use Network Next to accelerate my TCP game?
 
-In the rare cases where TCP does make sense for a game, we may be able to provide some benefit via a TCP to UDP shim, but this has not been implemented yet.
-
-If this is important to you, please talk to us via sales@networknext.com so we can understand your use case.
+Not yet. In the rare cases where TCP makes sense for a game, we may be able to provide some benefit via a TCP to UDP shim, but this has not been implemented yet. Please talk to us so we can understand your use case sales@networknext.com
 
 ## Can I use Network Next to accelerate my WebRTC game?
 
-Not yet. Please talk to us. We are actively investigating this as an option. sales@networknext.com
+Not yet. We are actively investigating this as an option. Please talk to us so we can understand your use case sales@networknext.com
