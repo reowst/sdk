@@ -6,17 +6,17 @@ Network Next is a marketplace for premium network transit.
 
 We sell 10 second slices of access to private networks via a two-sided marketplace, in other words, we're basically _Google Adwords for Packets_.
 
-The result is improved network transit from players around the world to your game servers. Players experience lower latency, fewer hitches, and less packet loss when they play over Network Next.
+## Why use Network Next?
 
-Players that we can't improve (yet), or are _good enough_ according to your requirements, take the public internet and are _free_.
+Network Next improves the quality of network transit from players around the world to your game servers. Players have lower latency, fewer hitches, and less packet loss when they play over Network Next.
 
 ## How does Network Next work?
 
-Network Next SDK steers UDP game traffic across the best path from each player to the game server using proprietary technology. 
+Network Next SDK steers UDP game traffic across the best path from each player to the game server via centrally planned routing system driven by a marketplace bidding system run once every 10 seconds per-player.
 
-We do this via our centrally planned routing system (control plane), driven by a marketplace bidding system run once every 10 seconds per-player.
+## Does Network Next violate Network Neutrality?
 
-This is our key innovation. Routing via bidding process ensures which ensures that we remain _supplier neutral_ and always steer traffic across the route that has the best performance at the best price.
+No. Routing via bidding process ensures which ensures that we remain _supplier neutral_ and always steer traffic across the route that has the best performance at the best price, without favoring any one supplier or buyer over another.
 
 ## What sort of improvements can Network Next provide?
 
@@ -28,33 +28,31 @@ We've seen players with 400ms round trip time reduced to 200ms or less, and play
 
 ## How much does Network Next cost?
 
-Network Next targets only the bottom 10% of your playerbase having a really bad experience, so it is very cost effective. 
-
-You don't pay _anything_ for the 90% of players who already have a good connection to your server.
-
-Bandwidth for players where we provide significant improvement costs 10c per-gigabyte on average right now, but we expect this to reduce over time.
+Bandwidth for players where we provide significant improvement costs 10c per-gigabyte on average right now, but Network Next targets only the bottom 10% or so of your player-base, making it very cost effective. That's an amortized cost of approximately 1c per-GB.
 
 ## Do players have to pay to use Network Next?
 
 No. Players do not have to pay. Our customer is the game developer, not the player.
 
-The game developer is happy to sponsor players so they have a better experience playing their game.
-
 ## How does billing work?
 
-Network Next sells 10 second slices of access across multiple networks according to the amount of bandwidth reserved up and down for each player.
+Network Next sells 10 second slices of access across multiple networks according to the amount of bandwidth reserved for each player.
 
-Therefore, we bill on the envelope of traffic your games uses, rather than the usage, since the private networks we work with operate by reserving this much capacity for each player.
+We bill on the envelope of traffic games uses, rather than the actual usage, since the private networks we work with reserve this much capacity for each player.
 
-Each month we sum up the total of 10 second bandwidth slices served by all suppliers for a game (often multiple suppliers are involved in each route), and that is the amount we bill.
+Each month we sum up the total of 10 second bandwidth slices served by all suppliers for a game (often multiple suppliers are involved in each route), and that is the amount billed to the game developer.
 
 ## How can I get access to the Network Next portal
 
 Please contact us at sales@networknext.com and we'll onboard you for a free trial.
 
-## What suppliers does Network Next work with?
+## What games use Network Next?
 
-We work with top infrastructure suppliers such as:
+Network Next is in production with [Rocket League](https://rocketleague.com) for several months now, and we accelerate millions of players every day. We're also live with several other games that aren't announced yet!
+
+## What suppliers work with Network Next?
+
+We work with top edge computing and infrastructure suppliers such as:
 
 * [Limelight](https://limelight.com)
 * [Stackpath](https://stackpath.com)
@@ -104,7 +102,7 @@ Please contact sales@networknext.com so we can understand your use case. Thanks!
 
 ## What languages are supported?
 
-The Network Next SDK is written in low-level C style C++ so it's easy to call from other additional languages. Please get involved and contribute a binding for your preferred language to our open source SDK! https://github.com/networknext/sdk
+The Network Next SDK is written in low-level C style C++ so it's easy to call from other additional languages. Get involved and contribute a binding for your preferred language to our open source SDK! https://github.com/networknext/sdk
 
 ## What locations are supported by Network Next?
 
@@ -124,11 +122,11 @@ No. We only support acceleration to servers hosted in datacenters with a known p
 
 ## Can I use Network Next for my peer-to-peer game?
 
-No. We only support acceleration of client/server traffic between clients and dedicated servers (hosted in datacenters) right now.
+No. We only support acceleration of client/server traffic between clients and dedicated servers hosted in datacenters.
 
 ## Can I use Network Next to accelerate my TCP game?
 
-Not yet. In the rare cases where TCP makes sense, we may be able to provide some benefit via a TCP shim that reduces the impact of packet loss induced head of line blocking across your client to server connection, but this has not been implemented yet. 
+Not yet. In the rare cases where TCP makes sense, we may be able to provide some benefit via a TCP shim that reduces the impact of packet loss induced head of line blocking across your client/server connection, but this has not been implemented yet. 
 
 Please talk to us so we can understand your use case sales@networknext.com
 
@@ -136,10 +134,10 @@ Please talk to us so we can understand your use case sales@networknext.com
 
 Not yet. We are actively investigating this as an option. Please talk to us so we can understand your use case sales@networknext.com
 
-Will players be disconnected from my game if Network Next goes down?
+## Will players be disconnected from my game if Network Next goes down?
 
 No. If our SDK cannot talk to our backend for any reason, players automatically fall back to the public internet and are _free_.
 
 ## Are you hiring?
 
-Yes. https://www.networknext.com/careers
+Always. https://www.networknext.com/careers
