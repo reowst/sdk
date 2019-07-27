@@ -4,6 +4,8 @@
 
 Network Next is a marketplace for premium network transit. 
 
+## How does the marketplace work?
+
 We sell 10 second slices of access to private networks via a two-sided marketplace, in other words, we're basically _Google Adwords for Packets_.
 
 ## Why use Network Next?
