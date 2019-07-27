@@ -46,7 +46,7 @@ Network Next sells 10 second slices of access across multiple networks according
 
 Therefore, we bill on the envelope of traffic your games uses, rather than the usage, since the private networks we work with operate by reserving this much capacity for each player.
 
-Each month we sum up the total of 10 second bandwidth slices served by all suppliers for a game (often multiple suppliers are involved in each route), and that is the total amount we bill to to the game developer.
+Each month we sum up the total of 10 second bandwidth slices served by all suppliers for a game (often multiple suppliers are involved in each route), and that is the amount we bill.
 
 ## How can I get access to the Network Next portal
 
