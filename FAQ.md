@@ -42,7 +42,7 @@ The game developer is happy to sponsor players so they have a better experience 
 
 ## How does billing work?
 
-Network Next sells 10 second slices of access across multiple networks according to the amount of bandwidth reserved up and down for the game. 
+Network Next sells 10 second slices of access across multiple networks according to the amount of bandwidth reserved up and down for each player.
 
 Therefore, we bill on the envelope of traffic your games uses, rather than the usage, since the private networks we work with operate by reserving this much capacity for each player.
 
