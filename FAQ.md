@@ -136,6 +136,6 @@ Please talk to us so we can understand your use case sales@networknext.com
 
 Not yet. We are actively investigating this as an option. Please talk to us so we can understand your use case sales@networknext.com
 
-# What happens if Network Next ever goes down?
+## What happens if Network Next ever goes down? Will players be disconnected from my game?
 
-If our SDK cannot talk to our backend platform for any reason, players automatically fall back to the public internet and are _free_.
+No. If our SDK cannot talk to our backend platform for any reason, players automatically fall back to the public internet and are _free_.
