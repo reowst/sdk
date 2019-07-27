@@ -14,9 +14,9 @@ Players that we can't improve (yet), or are _good enough_ according to your requ
 
 Network Next SDK steers UDP game traffic across the best path from each player to the game server using proprietary technology. 
 
-We do this via our centrally planned routing system (control plane), driven by a marketplace bidding system run once every 10 seconds per-player, across a series of software defined routers (data plane) in multiple redundant supplier networks.
+We do this via our centrally planned routing system (control plane), driven by a marketplace bidding system run once every 10 seconds per-player.
 
-The key innovation is routing via bidding process ensures which ensures that we remain _supplier neutral_ and always steer traffic across the route that has the best performance at the best price.
+This is our key innovation. Routing via bidding process ensures which ensures that we remain _supplier neutral_ and always steer traffic across the route that has the best performance at the best price.
 
 ## What sort of improvements can Network Next provide?
 
