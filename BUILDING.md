@@ -91,7 +91,7 @@ Welcome to Network Next!
 premake5 vs2019
 ```
 
-* Open the generated `next.sln` solution in Visual Studio (you can just double-click on `next.sln` and Visual Studio should open it).
+* Open the generated `next.sln` solution in Visual Studio (located where you cloned the SDK). You can just double-click on `next.sln` and Visual Studio should open it.
 
 * Under `Build` in the menu bar, click `Build Solution...` (or press `Ctrl-Shift-B`).
 
