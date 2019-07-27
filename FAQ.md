@@ -30,7 +30,7 @@ We've seen players with over 1000ms round trip time reduced to 50ms and players 
 
 ## How much does Network Next cost?
 
-Bandwidth for players where we provide significant improvement costs around 10c per-gigabyte on average right now, but Network Next targets only the bottom 10% or so of your player-base, giving an amortized cost of approximately 1c per-GB.
+Bandwidth for players where we provide significant improvement costs around 10c per-gigabyte on average right now, but Network Next targets only the bottom 10% of active sessions, giving an amortized cost of approximately 1c per-GB.
 
 ## Do players have to pay to use Network Next?
 
