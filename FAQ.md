@@ -4,9 +4,9 @@
 
 Network Next is a marketplace for premium network transit. 
 
-We sell 10 second slices of access to private networks, we're basically _Google Adwords for Packets_.
+We sell 10 second slices of access to private networks via a two-sided marketplace, we're basically _Google Adwords for Packets_.
 
-This results in improved network transit from players around the world to your game servers. Players experience lower latency, less hitching, and less packet loss while they play over Network Next.
+The results is improved network transit from players around the world to your game servers. Players experience lower latency, fewer hitches, and less packet loss when they play over Network Next.
 
 Players that we can't improve (yet), or are _good enough_ according to your requirements, take the public internet and are _free_.
 
@@ -14,13 +14,13 @@ Players that we can't improve (yet), or are _good enough_ according to your requ
 
 Network Next SDK steers UDP game traffic across the best path from each player to the game server using proprietary technology. 
 
-We do this via our centrally planned routing system (control plane), driven by a marketplace bidding system run once every 10 seconds per-player, across a series of software defined routers (data plane) across multiple redundant supplier networks.
+We do this via our centrally planned routing system (control plane), driven by a marketplace bidding system run once every 10 seconds per-player, across a series of software defined routers (data plane) in multiple redundant supplier networks.
 
-Routing via bidding process ensures that we remain _supplier neutral_ and always steer traffic across the route that has the best performance at the best price.
+The key innovation is routing via bidding process ensures which ensures that we remain _supplier neutral_ and always steer traffic across the route that has the best performance at the best price.
 
 ## What sort of improvements can Network Next provide?
 
-It depends on the time of day, ISP and location of each player, and on the data center where the traffic is being accelerated to... but overall across all players, we are typicalyl able to provide significant performance improvements for at least 10% of your playerbase (>10ms latency reduction, or 1% packet loss reduction or greater).
+It depends on the time of day, ISP and location of each player, and on the data center where the traffic is accelerated to... but overall across all players, we are typically able to provide significant performance improvements for at least 10% of your playerbase (>10ms latency reduction, or 1% packet loss reduction or greater).
 
 ## What's the biggest improvement Network Next has provided?
 
@@ -34,13 +34,21 @@ You don't pay _anything_ for the 90% of players who already have a good connecti
 
 Bandwidth for players where we provide significant improvement costs 10c per-gigabyte on average right now, but we expect this to reduce over time.
 
+## Do players have to pay to use Network Next?
+
+No. Players do not have to pay. Our customer is the game developer, not the player.
+
+The game developer is happy to sponsor players so they have a better experience playing their game.
+
 ## How does billing work?
 
-We sell 10 second slices of access across multiple networks according to the amount of bandwidth reserved. We need to bill on the envelope of traffic your games uses, rather than the actual usage, since the private networks we work with operate by reserving this much capacity for each player.
+Network Next sells 10 second slices of access across multiple networks according to the amount of bandwidth reserved up and down for the game. 
 
-Each month we sum up the total of 10 second bandwidth slices served by all suppliers (often multiple suppliers are involved in each route), and that is the total amount we bill to you.
+Therefore, we bill on the envelope of traffic your games uses, rather than the usage, since the private networks we work with operate by reserving this much capacity for each player.
 
-You don't pay for any routes that don't meet your quality expectations, or players for whom we aren't able to provide significant benefit.
+Each month we sum up the total of 10 second bandwidth slices served by all suppliers for a game (often multiple suppliers are involved in each route), and that is the total amount we bill to to the game developer.
+
+Game developers don't pay for any routes that don't meet your quality expectations, or for players for whom we aren't able to provide significant benefit (according to their own definition of what significant benefit may be).
 
 ## How can I get access to the Network Next portal
 
@@ -123,3 +131,14 @@ Please talk to us so we can understand your use case sales@networknext.com
 ## Can I use Network Next to accelerate my WebRTC game?
 
 Not yet. We are actively investigating this as an option. Please talk to us so we can understand your use case sales@networknext.com
+
+## What about Network Neutrality?
+
+We care deeply about Network Neutrality and have designed our marketplace to be as neutral as possible.
+
+In addition, suppliers cannot identify buyers and therefore act in an anti-competitive manner against buyers.
+
+We think Network Next is a way to boost network p
+
+## Do players have to pay to use Netowrk Next?
+
