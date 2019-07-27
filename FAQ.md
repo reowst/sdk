@@ -24,7 +24,7 @@ It depends on the time of day, ISP and location of each player, and on the data 
 
 ## What's the biggest improvement Network Next has provided?
 
-We've seen players with 400ms round trip time reduced to 200ms or less, and players with almost 100% packet loss reduced down to zero. This is not the common case, but these players sure appreciate it :)
+We've seen players with 400ms round trip time reduced to 200ms or less, and players with almost 100% packet loss reduced down to zero. This is not the common case, but these players certainly appreciate it :)
 
 ## How much does Network Next cost?
 
