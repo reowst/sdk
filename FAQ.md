@@ -10,7 +10,7 @@ We sell 10 second slices of access to private networks via a two-sided marketpla
 
 ## Why use Network Next?
 
-Network Next improves the quality of network transit from players around the world to your game servers. Players have lower latency, fewer hitches, and less packet loss when they play over Network Next.
+Network Next improves the quality of network transit from players around the world to game servers. Players have lower latency, fewer hitches, and less packet loss when they play over Network Next.
 
 ## How does Network Next work?
 
@@ -26,7 +26,7 @@ No. Suppliers cannot identify buyers on Network Next and therefore cannot provid
 
 ## What sort of improvements can Network Next provide?
 
-It depends on the time of day, ISP and location of each player, and on the data center where game server is located... but overall across all players, we are typically able to provide significant performance improvements for at least 10% of your playerbase (>10ms latency reduction, or 1% packet loss reduction or greater).
+It depends on the time of day, ISP and location of each player, and on the data center where game server is located... but overall across all players, we are typically able to provide significant performance improvements for at least 10% of a playerbase (>10ms latency reduction, or 1% packet loss reduction or greater).
 
 ## What's the biggest improvement Network Next has provided?
 
@@ -34,7 +34,7 @@ We've seen players with over 1000ms round trip time reduced to 50ms and players 
 
 ## How much does Network Next cost?
 
-Bandwidth for players where we provide significant improvement costs around 10c per-gigabyte on average right now, but Network Next typically targets only the bottom 10% that need the most help, giving an amortized cost of 1c per-GB.
+Bandwidth for players where we provide significant improvement costs around 10c per-gigabyte on average right now, but Network Next typically targets only the bottom 10% that need help at any time, giving an amortized cost of 1c per-GB.
 
 ## Do players have to pay to use Network Next?
 
