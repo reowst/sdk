@@ -102,7 +102,7 @@ Access to console platform support requires proof that you are a registered deve
 
 Please contact sales@networknext.com so we can understand your use case. Thanks!
 
-## What languages is the Network Next SDK support?
+## What languages are supported?
 
 The Network Next SDK is written in low-level C style C++ so it's easy to call from other additional languages. Please get involved and contribute a binding for your preferred language to our open source SDK! https://github.com/networknext/sdk
 
@@ -139,3 +139,7 @@ Not yet. We are actively investigating this as an option. Please talk to us so w
 Will players be disconnected from my game if Network Next goes down?
 
 No. If our SDK cannot talk to our backend for any reason, players automatically fall back to the public internet and are _free_.
+
+## Are you hiring?
+
+Yes. https://www.networknext.com/careers
