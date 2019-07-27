@@ -8,7 +8,7 @@ We sell 10 second slices of access to private networks, we're basically _Google 
 
 This results in improved network transit from players around the world to your game servers. Players experience lower latency, less hitching, and less packet loss while they play over Network Next.
 
-Players that we can't improve (yet), or are _good enough_ according to your requirements take the public internet and are _free_.
+Players that we can't improve (yet), or are _good enough_ according to your requirements, take the public internet and are _free_.
 
 ## How does Network Next work?
 
@@ -16,7 +16,7 @@ Network Next SDK steers UDP game traffic across the best path from each player t
 
 We do this via our centrally planned routing system (control plane), driven by a marketplace bidding system run once every 10 seconds per-player, across a series of software defined routers (data plane) across multiple redundant supplier networks.
 
-Routing via bidding process ensures that we remain _neutral_ and always steer traffic across the route that has the best performance at the best price.
+Routing via bidding process ensures that we remain _supplier neutral_ and always steer traffic across the route that has the best performance at the best price.
 
 ## What sort of improvements can Network Next provide?
 
@@ -28,9 +28,9 @@ We've seen players with 400ms round trip time reduced to 200ms or less, and play
 
 ## How much does Network Next cost?
 
-Network Next by targets only the bottom 10% of your playerbase having a really bad experience, so it is very cost effective. 
+Network Next targets only the bottom 10% of your playerbase having a really bad experience, so it is very cost effective. 
 
-You don't pay anything for the 90% of players who already have a good connection to your server.
+You don't pay _anything_ for the 90% of players who already have a good connection to your server.
 
 Bandwidth for players where we provide significant improvement costs 10c per-gigabyte on average right now, but we expect this to reduce over time.
 
@@ -63,7 +63,7 @@ We work with top infrastructure suppliers such as:
 * Oracle Cloud
 * IBM Cloud
 
-And many more we can't talk about yet!
+_And many more we can't talk about yet!_
 
 ## Where can I host game servers with Network Next?
 
@@ -90,13 +90,21 @@ If you'd like to evaluate Network Next but you host your game servers somewhere 
 
 Access to console platform support requires proof that you are a registered developer for that platform. Please contact sales@networknext.com for more information.
 
+## What if my platform isn't listed above
+
+Please contact sales@networknext.com so we can understand your use case. Thanks!
+
+## What locations are supported by Network Next?
+
+Network Next is now deployed worldwide. Please contact sales@networknext.com to discuss a trial so we can ensure that we optimally target the location of your game's userbase.
+
 ## Do you have an Unreal Engine 4 Plugin?
 
 Yes. Please contact sales@networknext.com 
 
 ## Do you have a Unity plugin?
 
-Not yet, but we're actively working on it right now! Coming very soon.
+Not yet, but we're actively working on it. Please contact sales@networknext.com and let us know you're interested.
 
 ## Can I use Network Next for player hosted servers?
 
@@ -108,7 +116,9 @@ No. We only support acceleration of client/server traffic between clients and de
 
 ## Can I use Network Next to accelerate my TCP game?
 
-Not yet. In the rare cases where TCP makes sense for a game, we may be able to provide some benefit via a TCP to UDP shim, but this has not been implemented yet. Please talk to us so we can understand your use case sales@networknext.com
+Not yet. In the rare cases where TCP makes sense, we may be able to provide some benefit via a TCP shim that reduces the impact of packet loss induced head of line blocking across your client to server connection, but this has not been implemented yet. 
+
+Please talk to us so we can understand your use case sales@networknext.com
 
 ## Can I use Network Next to accelerate my WebRTC game?
 
