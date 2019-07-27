@@ -84,7 +84,7 @@ We support game servers hosted by:
 * Google
 * Azure
 
-If you'd like to evaluate Network Next but you host your game servers somewhere else, please let us know at sales@networknext.com
+If you'd like to evaluate Network Next but you host game servers somewhere else, please let us know at sales@networknext.com
 
 ## What platforms do you support?
 
