@@ -81,7 +81,7 @@ Welcome to Network Next!
 
 ## If you are developing on Windows
 
-* [Install VS Community 2019](https://visualstudio.microsoft.com/vs/community/) if you don't already have a visual studio environment.
+* [Install VS Community 2019](https://visualstudio.microsoft.com/vs/community/) if you don't already have a visual studio environment. Make sure you install or have installed the **Desktop development with C++** workload.
 
 * Download [premake5.exe](https://github.com/premake/premake-core/releases/download/v5.0.0-alpha14/premake-5.0.0-alpha14-windows.zip) and put it next to `premake5.lua` in your copy of the SDK.
 
