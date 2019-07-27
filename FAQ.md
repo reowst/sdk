@@ -20,7 +20,7 @@ This is our key innovation. Routing via bidding process ensures which ensures th
 
 ## What sort of improvements can Network Next provide?
 
-It depends on the time of day, ISP and location of each player, and on the data center where the traffic is accelerated to... but overall across all players, we are typically able to provide significant performance improvements for at least 10% of your playerbase (>10ms latency reduction, or 1% packet loss reduction or greater).
+It depends on the time of day, ISP and location of each player, and on the data center where game server is located... but overall across all players, we are typically able to provide significant performance improvements for at least 10% of your playerbase (>10ms latency reduction, or 1% packet loss reduction or greater).
 
 ## What's the biggest improvement Network Next has provided?
 
