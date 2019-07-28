@@ -28,4 +28,4 @@ Finally, if you'd like to evaluate Network Next for your commercial project (whe
 
 cheers
 
-- Glenn Fiedler, CEO, Network Next
+_- Glenn Fiedler, CEO, Network Next_
