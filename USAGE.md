@@ -31,15 +31,17 @@ In this non-accelerated 'direct' mode, Network Next simply prefixes your existin
 
 ## 2. Create an account on our web portal
 
-To move past direct mode and get acceleration for your application, you need access to our web portal: https://app.v3.networknext.com
+To get acceleration for your application, you need access to our web portal: 
 
-Please reach out to sales@networknext.com to get access and begin your free trial.
+https://app.v3.networknext.com
 
 Inside the portal, you'll see a map of all players using Network Next, be able to drill into sessions for each live player, and configure your own usage of Network Next.
 
+Please reach out to sales@networknext.com to get access and begin your free trial.
+
 ## 3. Generate a private/public keypair
 
-The next step is to generate a private/public keypair.
+Once you have portal access, the next step is to generate a private/public keypair.
 
 We need this to ensure that nobody can request routes that bill to your account, except you.
 
@@ -64,40 +66,49 @@ IMPORTANT: Save your private key in a secure place and don't share it with anybo
 
 Now copy the base64 *public key* and paste it into the "Customer Public Key" entry under "Settings" -> "Game Configuration" in the portal and click save.
 
-Next, copy the same private key into server.cpp as a string, for example:
+Next, copy the same private key into server.cpp:
 ```
 static const char * customer_private_key = "PuOtENNoEI77YEjPhWbcEGsG5L5dVE7if1KxwRpwvYbBSy5uL1OWJeN7Brsqq+XdIeZEqefo/MCq4GFY7WpNE3Qfx4lTNRe4";
 ```
 
-And the public key into client.cpp:
+And copy the public key into client.cpp:
 ```
 static const char * customer_public_key = "PuOtENNoEI7jewa7Kqvl3SHmRKnn6PzAquBhWO1qTRN0H8eJUzUXuA==";
 ```
 
-You can also set the server private via an environment variable: NEXT_CUSTOMER_PRIVATE_KEY, which we strongly recommend past this initial step.
+You can also set the private for the server via an environment variable: NEXT_CUSTOMER_PRIVATE_KEY, which we strongly recommend past this initial integration step.
 
 ## 4. Client and server running in 'upgraded' mode
 
-Rebuild and run the client and server as per-the steps described for your platform.
+Next, rebuild and run the client and server.
 
 You should now see:
 ```
+Welcome to Network Next!
+
+0.000179: info: server datacenter is 'local'
+0.000494: info: server started on 127.0.0.1:32202
+0.000521: info: server resolving hostname udp-v3
+0.120935: info: server resolved hostname to 10.99.2.5:40001
+2.058923: info: server upgraded client 192.168.65.3:44174 to session 7f127fe26281d1c4
 ```
-on the server, and:
+and:
+```
+Welcome to Network Next!
 
-on the client.
+0.015976: info: client opened session to 127.0.0.1:32202
+0.064203: info: client upgraded to session 7f127fe26281d1c4
+```
 
-Seeing this output means that the customer private/public keypair working, and the client player are being correctly "upgraded" by the server.
-
-Upgraded means that the client has performed key exchange with the server, and Network Next is ready to accelerate that player if we can provide significant benefit over the public internet.
+This means the the client has been "upgraded" for possible acceleration by Network Next.
 
 ## Next steps
 
-Congratulations! You have successfully setup your account and private/public keypair. 
+Congratulations! You have successfully setup your account and private/public keypair.  
 
 You are ready to begin integration with your game.
 
-At this point, please contact us on the Discord support channel which you can access via "Support" in the top menu bar, and we will guide you through the next steps in your integration.
+At this point, please contact us on the Discord support channel which you can access via "Support" in the web portal, and we will guide you through the next steps in your integration.
 
 cheers
 
