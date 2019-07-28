@@ -4,9 +4,9 @@
 
 [Network Next](https://networknext.com) is a marketplace for premium network transit.
 
-Network Next is used by latency sensitive applications like real-time multiplayer games.
+Network Next is typically used by latency sensitive applications like real-time multiplayer games.
 
-Network Next is production with [Rocket League](https://rocketleague.com) and is accelerating millions of sessions per-day!
+Network Next is in production with [Rocket League](https://rocketleague.com) and is accelerating millions of sessions per-day!
 
 ## Building Network Next
 
