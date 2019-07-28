@@ -22,7 +22,7 @@ Once you have built the SDK, please read [USAGE.md](https://github.com/networkne
 
 We also have a [FAQ](https://github.com/networknext/sdk/blob/master/FAQ.md) which answers common questions people have about Network Next.
 
-Finally, if you'd like to evaluate usage of Network Next for your commercial project (whether it is a game or not), please reach out to sales@networknext.com and we'll set you up with a free trial.
+Finally, if you'd like to evaluate Network Next for your commercial project (whether it's a game or not), please reach out to sales@networknext.com and we'll set you up with a free trial.
 
 cheers
 
