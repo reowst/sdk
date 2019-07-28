@@ -100,9 +100,9 @@ Welcome to Network Next!
 0.064203: info: client upgraded to session 7f127fe26281d1c4
 ```
 
-This means the the client has been "upgraded" for possible acceleration by Network Next.
+This means the the client has been 'upgraded' for possible acceleration by Network Next.
 
-## 5. Hop onto Discord!
+## 5. Hop on Discord
 
 Congratulations! You have successfully setup your account and private/public keypair.  
 
