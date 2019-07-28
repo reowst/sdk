@@ -10,7 +10,7 @@ We sell 10 second slices of access to private networks via a two-sided marketpla
 
 ## Why use Network Next?
 
-Network Next improves the quality of network transit from players around the world to game servers. Players have lower latency, fewer hitches, and less packet loss when they play over Network Next.
+Network Next improves the quality of network transit from players around the world to servers hosted in datacenters. Players have lower latency, fewer hitches, and less packet loss when they play over Network Next.
 
 ## How does Network Next work?
 
