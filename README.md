@@ -2,7 +2,7 @@
 
 [Network Next](https://networknext.com) is a marketplace for premium network transit.
 
-It's used by multiplayer games to get better network performance for their players.
+It's used by game developers to get better network performance in multiplayer games.
 
 ## Building Network Next
 
