@@ -4,8 +4,6 @@
 
 It's used by multiplayer games to get better network performance for their players.
 
-Network Next is in production with [Rocket League](https://rocketleague.com) and is accelerating millions of sessions per-day!
-
 ## Building Network Next
 
 To use Network Next, you must integrate the Network Next SDK with your game client and server.
