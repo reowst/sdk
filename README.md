@@ -2,7 +2,7 @@
 
 <br>
 
-## Welcome to Network Next!
+_## Welcome to Network Next!_
 
 [Network Next](https://networknext.com) is a marketplace for premium network transit.
 
