@@ -112,4 +112,4 @@ At this point, please contact us on the Discord support channel, via the 'Suppor
 
 cheers
 
-- Glenn Fiedler, CEO, Network Next
+_- Glenn Fiedler, CEO, Network Next_
