@@ -142,4 +142,4 @@ No. If our SDK cannot talk to our backend for any reason, players automatically 
 
 ## Are you hiring?
 
-Always. https://www.networknext.com/careers
+Yes. https://www.networknext.com/careers
