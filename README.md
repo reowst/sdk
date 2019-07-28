@@ -16,8 +16,6 @@ Our SDK is extremely simple, and basically replaces the sendto/recvfrom API you 
 
 To get started, first visit [BUILDING.md](https://github.com/networknext/sdk/blob/master/BUILDING.md) for a guide for building on Windows, Mac and Linux.
 
-If you'd like to build our SDK on game consoles (PS4, Xbox One, Nintendo Switch), please email sales@networknext.com. Unfortunately, due to licencing restrictions, we need proof that you are a licenced developer for these platforms before we can share this code with you.
-
 ## Usage and Next Steps
 
 Once you have built the SDK, please read [USAGE.md](https://github.com/networknext/sdk/blob/master/USAGE.md) to learn how to use Network Next.
