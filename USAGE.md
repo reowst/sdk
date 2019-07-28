@@ -22,7 +22,7 @@ Welcome to Network Next!
 0.021332: info: client opened session to 127.0.0.1:32202
 ```
 
-At this point the client and server are exchanging packets between each other, but these packets are not accelerated.
+At this point the client and server are exchanging packets, but these packets are not accelerated.
 
 In this non-accelerated mode, Network Next simply prefixes your existing packets with a zero byte:
 ```
