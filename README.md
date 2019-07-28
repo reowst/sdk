@@ -20,4 +20,4 @@ If you'd like to build our SDK on game consoles (PS4, Xbox One, Nintendo Switch)
 
 ## Usage
 
-Once you have built the SDK, please read [USAGE.md](https://github.com/networknext/sdk/blob/master/USAGE.md) to learn more how to use Network Next.
+Once you have built the SDK, please read [USAGE.md](https://github.com/networknext/sdk/blob/master/USAGE.md) to learn how to use Network Next.
