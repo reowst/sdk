@@ -102,7 +102,7 @@ Welcome to Network Next!
 
 This means the the client has been 'upgraded' for possible acceleration by Network Next.
 
-## 5. Hop on Discord
+## 5. Hop on to Discord
 
 Congratulations! You've successfully setup your account and keypair.  
 
