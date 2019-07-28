@@ -24,12 +24,12 @@ Welcome to Network Next!
 
 At this point the client and server are exchanging packets between each other, but these packets are not accelerated yet.
 
-In this non-accelerated, Network Next simply prefixes your existing packets with a zero byte:
+In this non-accelerated mode, Network Next simply prefixes your existing packets with a zero byte:
 ```
 [0](regular UDP payload)
 ```
 
-We call this 'direct mode', and it's what Network Next does by default.
+We call this 'direct mode' and it's what Network Next does by default.
 
 ## 2. Create an account on our web portal
 
