@@ -51,8 +51,6 @@ Run the keygen tool under the 'keygen', directory in the SDK:
 
 You should see something like:
 ```
-macbook:keygen glenn$ ./keygen_mac
-
 Welcome to Network Next!
 
 This is your public key:
@@ -73,18 +71,18 @@ Next, copy the same private key into server.cpp:
 static const char * customer_private_key = "PuOtENNoEI77YEjPhWbcEGsG5L5dVE7if1KxwRpwvYbBSy5uL1OWJeN7Brsqq+XdIeZEqefo/MCq4GFY7WpNE3Qfx4lTNRe4";
 ```
 
-And copy the public key into client.cpp:
+and the public key into client.cpp:
 ```
 static const char * customer_public_key = "PuOtENNoEI7jewa7Kqvl3SHmRKnn6PzAquBhWO1qTRN0H8eJUzUXuA==";
 ```
 
-You can also set the private for the server via an environment variable: NEXT_CUSTOMER_PRIVATE_KEY, which we strongly recommend past this initial integration step.
+You can also set the private for the server via an environment variable: NEXT_CUSTOMER_PRIVATE_KEY, which we _strongly_ recommend past this initial integration step.
 
 ## 4. Client and server running in 'upgraded' mode
 
 Next, rebuild and run the client and server.
 
-You should now see:
+You should now see something like.:
 ```
 Welcome to Network Next!
 
@@ -110,7 +108,7 @@ Congratulations! You have successfully setup your account and private/public key
 
 You are ready to begin integration with your game.
 
-At this point, please contact us on the Discord support channel which you can access via "Support" in the web portal, and we will guide you through the next steps in your integration.
+At this point, please contact us on the Discord support channel, via the "Support" navbar item in the web portal, and we will guide you through the next steps in your integration.
 
 cheers
 
