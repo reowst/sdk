@@ -14,7 +14,7 @@ Welcome to Network Next!
 0.110721: info: server resolved hostname to 146.148.45.204:40000
 ```
 
-and on the client:
+and:
 ```
 Welcome to Network Next!
 
