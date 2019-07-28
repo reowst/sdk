@@ -37,7 +37,7 @@ To accelerate your application you need access to our web portal:
 
 https://app.v3.networknext.com
 
-Inside the portal, you'll see a map of all players using Network Next, be able to drill into sessions for each live player, and configure your usage of Network Next.
+Inside the portal, you can see a map of all players using Network Next, drill into sessions for each live player, and configure your usage of Network Next.
 
 Please reach out to sales@networknext.com to get access and begin your free trial.
 
@@ -45,7 +45,7 @@ Please reach out to sales@networknext.com to get access and begin your free tria
 
 Once you have portal access, the next step is to generate a private/public keypair.
 
-We need this to ensure that nobody can request routes that bill to your account, except you.
+This ensures that nobody can request routes that bill to your account, except you.
 
 Run the keygen tool under the 'keygen', directory in the SDK:
 
