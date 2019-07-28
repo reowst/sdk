@@ -4,9 +4,9 @@
 
 It's used by multiplayer games to get better network performance for their players.
 
-## Building Network Next
+## Building the Network Next SDK
 
-To use Network Next, you must integrate the Network Next SDK with your game client and server.
+To use Network Next, games integrate the Network Next SDK with their client and server.
 
 Our SDK is extremely simple, and is designed to replace the sendto/recvfrom API you already use to send UDP packets.
 
