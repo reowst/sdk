@@ -2,7 +2,7 @@
 
 <br>
 
-# Network Next Usage
+# How to use Network Next
 
 ## 1. Direct mode
 
