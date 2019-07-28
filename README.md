@@ -4,6 +4,8 @@
 
 It's used by multiplayer games to get better network performance for their players.
 
+For example, Network Next is used by [Rocket League](https://rocketleague.com) and we accelerate millions of sessions per-day.
+
 ## Building the Network Next SDK
 
 To use Network Next, games integrate the Network Next SDK with their client and server.
