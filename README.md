@@ -6,7 +6,7 @@ Network Next is a marketplace for premium network transit.
 
 Typically, Network Next is used for latency sensitive applications like multiplayer games.
 
-For example, Network Next is production with [Rocket League](https://rocketleague.com) and is accelerating millions of players per-day.
+For example, Network Next is production with [Rocket League](https://rocketleague.com) and is accelerating millions of sessions per-day.
 
 ## Building Network Next
 
