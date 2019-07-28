@@ -47,7 +47,7 @@ Once you have portal access, the next step is to generate a private/public keypa
 
 This ensures that nobody can request routes that bill to your account, except you.
 
-Run the keygen tool under the 'keygen', directory in the SDK:
+Run the keygen tool under the 'keygen' directory in the SDK:
 
 You should see something like:
 ```
