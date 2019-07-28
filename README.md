@@ -10,15 +10,13 @@ For example, Network Next is production with [Rocket League](https://rocketleagu
 
 ## Building Network Next
 
-To use Network Next, you must integrate SDK integrates with your game client and server.
+To use Network Next, you must integrate the Network Next SDK with your game client and server.
 
-Our SDK is extremely simple, and basically replaces the sendto/recvfrom for UDP packets, in order to steer game traffic across private networks with better performance than the public internet.
+Our SDK is extremely simple, and basically replaces the sendto/recvfrom API you already use to send UDP packets, so that it can steer traffic across private networks with better performance than the public internet.
 
-To get started, first build the SDK from the source code in this repository.
+To get started, first visit [BUILDING.md](https://github.com/networknext/sdk/blob/master/BUILDING.md) for a guide for building on Windows, Mac and Linux.
 
-Visit [BUILDING.md](https://github.com/networknext/sdk/blob/master/BUILDING.md) for a guide for building on Windows, Mac and Linux.
-
-If you'd like to use our SDK for game consoles (PS4, Xbox One, Nintendo Switch), please email sales@networknext.com. We need to see proof that you are a licenced developer for these platforms before we can share this code with you.
+If you'd like to build our SDK on game consoles (PS4, Xbox One, Nintendo Switch), please email sales@networknext.com. Unfortunately, due to licencing restrictions, we need proof that you are a licenced developer for these platforms before we can share this code with you.
 
 ## Usage
 
