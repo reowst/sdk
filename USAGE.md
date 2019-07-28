@@ -108,7 +108,7 @@ Congratulations! You've successfully setup your account and keypair.
 
 You are ready to begin integration with your game.
 
-At this point, please contact us on the Discord support channel, via the "Support" menu item in the web portal, and we'll guide you through the next steps in your integration.
+At this point, please contact us on the Discord support channel, via the 'Support' menu item in the portal, and we'll guide you through the next steps in your integration.
 
 cheers
 
