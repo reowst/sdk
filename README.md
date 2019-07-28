@@ -18,10 +18,14 @@ To get started, first visit [BUILDING.md](https://github.com/networknext/sdk/blo
 
 If you'd like to build our SDK on game consoles (PS4, Xbox One, Nintendo Switch), please email sales@networknext.com. Unfortunately, due to licencing restrictions, we need proof that you are a licenced developer for these platforms before we can share this code with you.
 
-## Usage
+## Usage and Next Steps
 
 Once you have built the SDK, please read [USAGE.md](https://github.com/networknext/sdk/blob/master/USAGE.md) to learn how to use Network Next.
 
-## Frequenty Asked Questions
-
 We also have a [FAQ](https://github.com/networknext/sdk/blob/master/FAQ.md) which answers common questions people have about Network Next.
+
+Finally, if you'd like to evaluate usage of Network Next for your commercial project (whether it is a game or not), please reach out to sales@networknext.com and we can set you up with a free trial.
+
+cheers
+
+- Glenn Fiedler, CEO, Network Next
