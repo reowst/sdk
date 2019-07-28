@@ -2,7 +2,7 @@
 
 ## Welcome to Network Next!
 
-Network Next is a marketplace for premium network transit.
+[Network Next](https://networknext.com) is a marketplace for premium network transit.
 
 Typically, Network Next is used for latency sensitive applications like multiplayer games.
 
