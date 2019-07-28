@@ -14,7 +14,7 @@ To use Network Next, you must integrate the Network Next SDK with your game clie
 
 Our SDK is extremely simple, and is designed to replace the sendto/recvfrom API you already use to send UDP packets.
 
-To get started, first visit [BUILDING.md](https://github.com/networknext/sdk/blob/master/BUILDING.md) for a guide for building on Windows, Mac and Linux.
+To get started, first visit [BUILDING.md](https://github.com/networknext/sdk/blob/master/BUILDING.md) for a guide for building the SDK on Windows, Mac and Linux.
 
 ## Usage and Next Steps
 
