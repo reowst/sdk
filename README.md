@@ -1,4 +1,4 @@
-# Network Next SDK
+https://app.v3.networknext.com/static/media/logo.02362a9b.png
 
 ## Welcome to Network Next!
 
