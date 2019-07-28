@@ -2,7 +2,7 @@
 
 ## 1. Direct mode
 
-First, build the Network Next SDK and run the client and server examples.
+First, [build](https://github.com/networknext/sdk/blob/master/BUILDING.md) the Network Next SDK and run the client and server examples.
 
 You should see something like:
 ```
