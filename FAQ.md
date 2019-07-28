@@ -18,7 +18,7 @@ Network Next SDK steers UDP game traffic across the best path from players to ga
 
 ## Does Network Next violate Network Neutrality?
 
-No. Routing via bidding process ensures which ensures that we remain _supplier neutral_ and always steer traffic across the route with the best performance at the best price, without favoring any one buyer or supplier over another.
+No. Routing via bidding process ensures that we remain _supplier neutral_ and always steer traffic across the route with the best performance at the best price, without favoring any one buyer or supplier over another.
 
 ## Can suppliers specify a different price depending on the buyer?
 
