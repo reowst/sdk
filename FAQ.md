@@ -106,7 +106,7 @@ Please contact sales@networknext.com so we can understand your use case. Thanks!
 
 ## What languages are supported?
 
-The Network Next SDK is written in low-level C style C++ so it's easy to call from other additional languages. Get involved and contribute a binding for your preferred language to our open source SDK! https://github.com/networknext/sdk
+The Network Next SDK is written in low-level C style C++ so it's easy to call from other languages. Get involved and contribute a binding for your preferred language to our open source SDK! https://github.com/networknext/sdk
 
 ## What locations are supported by Network Next?
 
