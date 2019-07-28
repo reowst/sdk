@@ -33,11 +33,11 @@ We call this 'direct mode' and it's what Network Next does by default.
 
 ## 2. Create an account on our web portal
 
-To get acceleration for your application, you first need access to our web portal: 
+To accelerate your application, you need access to our web portal: 
 
 https://app.v3.networknext.com
 
-Inside the portal, you'll see a map of all players using Network Next, be able to drill into sessions for each live player, and configure your own usage of Network Next.
+Inside the portal, you'll see a map of all players using Network Next, be able to drill into sessions for each live player, and configure your usage of Network Next.
 
 Please reach out to sales@networknext.com to get access and begin your free trial.
 
@@ -76,13 +76,13 @@ and the public key into client.cpp:
 static const char * customer_public_key = "PuOtENNoEI7jewa7Kqvl3SHmRKnn6PzAquBhWO1qTRN0H8eJUzUXuA==";
 ```
 
-You can also set the private for the server via an environment variable: NEXT_CUSTOMER_PRIVATE_KEY, which we _strongly_ recommend past this initial integration step.
+You can also set the server private key the via the environment variable NEXT_CUSTOMER_PRIVATE_KEY, which we _strongly_ recommend past this initial integration step.
 
 ## 4. Client and server running in 'upgraded' mode
 
 Next, rebuild and run the client and server.
 
-You should now see something like.:
+You should now see something like:
 ```
 Welcome to Network Next!
 
@@ -104,11 +104,11 @@ This means the the client has been 'upgraded' for possible acceleration by Netwo
 
 ## 5. Hop on Discord
 
-Congratulations! You have successfully setup your account and private/public keypair.  
+Congratulations! You've successfully setup your account and keypair.  
 
 You are ready to begin integration with your game.
 
-At this point, please contact us on the Discord support channel, via the "Support" navbar item in the web portal, and we will guide you through the next steps in your integration.
+At this point, please contact us on the Discord support channel, via the "Support" menu item in the web portal, and we will guide you through the next steps in your integration.
 
 cheers
 
