@@ -6,7 +6,7 @@
 
 Typically, Network Next is used for latency sensitive applications like multiplayer games.
 
-Network Next is production with [Rocket League](https://rocketleague.com) and is accelerating millions of sessions per-day.
+Network Next is production with [Rocket League](https://rocketleague.com) and is accelerating millions of sessions per-day!
 
 ## Building Network Next
 
