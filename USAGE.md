@@ -33,7 +33,7 @@ We call this 'direct mode' and it's what Network Next does by default.
 
 ## 2. Create an account on our web portal
 
-To accelerate your application, you need access to our web portal: 
+To accelerate your application you need access to our web portal: 
 
 https://app.v3.networknext.com
 
