@@ -12,7 +12,7 @@ Network Next is in production with [Rocket League](https://rocketleague.com) and
 
 To use Network Next, you must integrate the Network Next SDK with your game client and server.
 
-Our SDK is extremely simple, and basically replaces the sendto/recvfrom API you already use to send UDP packets, in order to steer traffic across private networks with better performance than the public internet.
+Our SDK is extremely simple, and is designed to replace the sendto/recvfrom API you already use to send UDP packets.
 
 To get started, first visit [BUILDING.md](https://github.com/networknext/sdk/blob/master/BUILDING.md) for a guide for building on Windows, Mac and Linux.
 
