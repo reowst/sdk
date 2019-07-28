@@ -2,7 +2,7 @@
 
 [Network Next](https://networknext.com) is a marketplace for premium network transit.
 
-It's used by multiplayer games to get better network performance for their players when they play online.
+It's used by multiplayer games to get better network performance for their players.
 
 Network Next is in production with [Rocket League](https://rocketleague.com) and is accelerating millions of sessions per-day!
 
