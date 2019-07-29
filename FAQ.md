@@ -138,7 +138,7 @@ Not yet, but in the future we may be able to provide benefit via a TCP shim that
 
 ## Can I use Network Next to accelerate my WebRTC game?
 
-Not yet. We are actively investigating this as an option. Please email us at sales@networknext.com so we can understand your use case.
+Not yet. We are actively investigating this as an option. Please contact sales@networknext.com
 
 ## Will players be disconnected from my game if Network Next goes down?
 
