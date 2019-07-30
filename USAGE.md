@@ -108,7 +108,7 @@ This means the the client has been 'upgraded' for possible acceleration by Netwo
 
 ## 5. Hop on to Discord
 
-Congratulations! You've successfully setup your account and keypair.  
+Congratulations! You have successfully setup your account and keypair.  
 
 You are ready to begin integration with your game.
 
