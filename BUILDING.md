@@ -144,6 +144,12 @@ These instructions are designed for Ubuntu 14.04-18.04.
    ```shell
    sudo apt install build-essential
    ```
+   
+* Install libsodium:
+
+   ```shell
+   sudo apt install libsodium-dev
+   ```
 
 * Install premake:
 
