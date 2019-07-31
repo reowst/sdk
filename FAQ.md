@@ -22,7 +22,7 @@ Network Next SDK steers UDP game traffic across the best path from players to ga
 
 ## Wait what? Say that again
 
-Every 10 seconds, suppliers (companies who own network infrastructure), compete on performance and price to carry your game's UDP traffic. Network Next steers your game traffic across the best route, changing this route dynamically, without your players knowing, once every 10 seconds if a better or cheaper route becomes available.
+Every 10 seconds, suppliers compete on performance and price to carry your game's UDP traffic. Network Next steers your game traffic across this route, changing the route dynamically - _without your players knowing_ - once every 10 seconds if a better or cheaper route becomes available.
 
 ## Does Network Next violate Network Neutrality?
 
