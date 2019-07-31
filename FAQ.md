@@ -20,7 +20,7 @@ Network Next improves the quality of network transit from players around the wor
 
 Network Next SDK steers UDP game traffic across the best path from players to game servers via centrally planned routing driven by a marketplace bidding system run once every 10 seconds per-player.
 
-## Wait what? Say that again
+## Wait what? Say that again...
 
 Every 10 seconds, suppliers compete on performance and price to carry your game's UDP traffic. Network Next steers your game traffic across this route, changing the route dynamically - _without your players knowing_ - once every 10 seconds if a better or cheaper route becomes available.
 
