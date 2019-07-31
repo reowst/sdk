@@ -26,7 +26,7 @@ Every 10 seconds, suppliers compete on performance and price to carry your game'
 
 ## Does Network Next change the player route all the time?
 
-No. Typically Network Next finds a high quality route and sticks with it, however if the current route degrades, or if we find something significantly better, we are able to switch to that route seamlessly.
+No. Typically Network Next finds a high quality route and sticks with it, however if the current route degrades, or if we find something significantly better, we are able to switch to that route dynamically.
 
 ## Do players notice when the route changes?
 
