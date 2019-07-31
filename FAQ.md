@@ -50,10 +50,12 @@ No. Players do not have to pay. Our customer is the game developer, not the play
 
 ## How does billing work?
 
-Because the private networks we work with reserve capacity for each player, Network Next bills on the envelope of traffic, rather than the actual usage.
-
 Each month we sum up the total of 10 second bandwidth slices served by all suppliers for a game (often multiple suppliers are involved in each route), and that is the amount we bill to the game developer.
 
+## Do you bill on bandwidth usage or on the amount reserved?
+
+Private networks we work with reserve capacity for each player according to the envelope to ensure the best network quality for your players, so we bill on the amount reserved, not on the amount actually used.
+ 
 ## How can I get access to the Network Next portal
 
 Please contact us at sales@networknext.com and we'll onboard you for a free trial.
