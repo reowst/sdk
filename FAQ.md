@@ -56,18 +56,18 @@ Each month we sum up the total of 10 second bandwidth slices served by all suppl
 
 Private networks reserve capacity for each player to ensure the best network quality for your players, so we bill on the bandwidth envelope specified, not on the amount actually used.
 
-## Can there be a different bandwidth envelope from client to server and server to client?
+## Can there be a different bandwidth envelope up and down?
 
-Yes. Game protocols are often asymmetric, so you may specify different envelopes up and down. For example, 100kbps up, 512 kbps down.
+Yes. Game protocols are often asymmetric, so you may specify different envelopes for traffic up from the client to the server, and down from the server to the client.
 
-## Can I change the bandwidth envelope over nitem
+## What happens if I go over the bandwidth envelope?
 
-Not yet, but we're adding this feature so the server can adjust the bandwidth envelope as needed. For example, this is useful for battle royale style games which use less bandwidth at the end of the match than they do at the beginning.
+Packets that go over the bandwidth envelope are not accelerated and just take the public internet.
+
+## Can I change the bandwidth envelope over time?
+
+Not yet, but we're actively working on this feature. Expect it very soon.
  
-## How can I get access to the Network Next portal
-
-Please contact us at sales@networknext.com and we'll onboard you for a free trial.
-
 ## What games use Network Next?
 
 Network Next is in production with [Rocket League](https://rocketleague.com) for several months now, and we accelerate millions of sessions every day. We're also live with several other games we haven't announced yet.
@@ -157,6 +157,10 @@ Not yet. We are actively investigating this as an option. Please contact sales@n
 ## Will players be disconnected from my game if Network Next goes down?
 
 No. If our SDK cannot talk to our backend for any reason, players automatically fall back to the public internet and are _free_.
+
+## How can I get access to the Network Next portal
+
+Please contact us at sales@networknext.com and we'll onboard you for a free trial.
 
 ## Are you hiring?
 
