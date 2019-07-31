@@ -22,7 +22,15 @@ Network Next SDK steers UDP game traffic across the best path from players to ga
 
 ## Wait what? Say that again...
 
-Every 10 seconds, suppliers compete on performance and price to carry your game's UDP traffic. Network Next steers your game traffic across this route, changing the route dynamically - _without your players knowing_ - once every 10 seconds if a better or cheaper route becomes available.
+Every 10 seconds, suppliers compete on performance and price to carry your game's UDP traffic. Network Next steers your game traffic across this route, changing the route dynamically - _without your players noticing_ - once every 10 seconds if a better or cheaper route becomes available.
+
+## Does Network Next change the player route all the time?
+
+No. Typically Network Next finds a high quality route and sticks with it, however if the current route degrades, or if we find something significantly better, we are able to switch to that route seamlessly.
+
+## Do players notice when the route changes?
+
+No. It's completely seamless, but at the same time we do our best to minimize the number of route changes.
 
 ## Does Network Next violate Network Neutrality?
 
@@ -34,7 +42,7 @@ No. Suppliers cannot identify buyers on Network Next and therefore cannot provid
 
 ## What sort of improvements can Network Next provide?
 
-It depends on the time of day, ISP and location of each player, and on the data center where game server is located... but overall across all players, we are typically able to provide significant performance improvements for at least 10% of a playerbase (>10ms latency reduction, or 1% packet loss reduction or greater).
+It depends on the time of day, ISP and location of each player, and on the data center where game server is located... but overall across all players, we are typically able to provide significant performance improvements for at least 10% of a player sessions (>10ms latency reduction, or 1% packet loss reduction or greater).
 
 ## What's the biggest improvement Network Next has provided?
 
@@ -54,11 +62,15 @@ Each month we sum up the total of 10 second bandwidth slices served by all suppl
 
 ## Do you bill on bandwidth usage or on the amount reserved?
 
-Private networks reserve capacity for each player to ensure the best network quality for your players, so we bill on the bandwidth envelope specified, not on the amount actually used.
+Private networks reserve capacity for each player to ensure the best network quality, so we bill on the bandwidth envelope specified, not on the amount actually used.
 
 ## Can there be a different bandwidth envelope up and down?
 
 Yes. Game protocols are often asymmetric, so you may specify different envelopes for traffic up from the client to the server, and down from the server to the client.
+
+## Is the bandwidth envelope per-server, or per-player
+
+Each player has their own bandwidth envelope.
 
 ## What happens if I go over the bandwidth envelope?
 
