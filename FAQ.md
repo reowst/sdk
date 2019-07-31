@@ -42,7 +42,7 @@ We've seen players with over 1000ms round trip time reduced to less than 50ms an
 
 ## How much does Network Next cost?
 
-The average price per-gigabyte is 10c right now, but because Network Next typically targets only the bottom 10% that need help at any time, the amortized cost is only 1c per-GB.
+The average price per-gigabyte is 10c right now, but because Network Next typically targets only the bottom 10% that need help at any time, the amortized cost is just 1c per-GB.
 
 ## Do players have to pay to use Network Next?
 
@@ -54,7 +54,7 @@ Each month we sum up the total of 10 second bandwidth slices served by all suppl
 
 ## Do you bill on bandwidth usage or on the amount reserved?
 
-Private networks we work with reserve capacity for each player according to the envelope to ensure the best network quality for your players, so we bill on the amount reserved, not on the amount actually used.
+Private networks we work with reserve capacity for each player according to the envelope to ensure the best network quality for your players, so we bill on the bandwidth envelope reserved for each player, not on the amount actually used.
  
 ## How can I get access to the Network Next portal
 
