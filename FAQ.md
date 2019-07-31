@@ -68,6 +68,10 @@ Packets that go over the bandwidth envelope are not accelerated and just take th
 
 Not yet, but we're actively working on this feature. Expect it very soon.
  
+## How can I get access to the Network Next portal
+
+Please contact us at sales@networknext.com and we'll onboard you for a free trial.
+
 ## What games use Network Next?
 
 Network Next is in production with [Rocket League](https://rocketleague.com) for several months now, and we accelerate millions of sessions every day. We're also live with several other games we haven't announced yet.
@@ -157,10 +161,6 @@ Not yet. We are actively investigating this as an option. Please contact sales@n
 ## Will players be disconnected from my game if Network Next goes down?
 
 No. If our SDK cannot talk to our backend for any reason, players automatically fall back to the public internet and are _free_.
-
-## How can I get access to the Network Next portal
-
-Please contact us at sales@networknext.com and we'll onboard you for a free trial.
 
 ## Are you hiring?
 
