@@ -36,7 +36,7 @@ No. It's completely seamless, but at the same time we do our best to minimize th
 
 No. Routing via bidding process ensures that we remain _supplier neutral_ and always steer traffic across the route with the best performance at the best price, without favoring any one buyer or supplier over another.
 
-## Will Network Next ever accept strategic investment from network infrastructure or transit companies?
+## Will you ever accept strategic investment from network infrastructure?
 
 No. Doing so would violate the neutrality of our marketplace.
 
