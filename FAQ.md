@@ -54,7 +54,15 @@ Each month we sum up the total of 10 second bandwidth slices served by all suppl
 
 ## Do you bill on bandwidth usage or on the amount reserved?
 
-Private networks we work with reserve capacity for each player according to the envelope to ensure the best network quality for your players, so we bill on the bandwidth envelope reserved for each player, not on the amount actually used.
+Private networks reserve capacity for each player to ensure the best network quality for your players, so we bill on the bandwidth envelope specified, not on the amount actually used.
+
+## Can there be a different bandwidth envelope from client to server and server to client?
+
+Yes. Game protocols are often asymmetric, so you may specify different envelopes up and down. For example, 100kbps up, 512 kbps down.
+
+## Can I change the bandwidth envelope over nitem
+
+Not yet, but we're adding this feature so the server can adjust the bandwidth envelope as needed. For example, this is useful for battle royale style games which use less bandwidth at the end of the match than they do at the beginning.
  
 ## How can I get access to the Network Next portal
 
