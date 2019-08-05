@@ -803,7 +803,7 @@ static int get_connection_type()
         {
             struct ifreq req;
             memset( &req, 0, sizeof( req ) );
-            strncpy( req.ifr_name, i->ifa_name, IFNAMSIZ );
+            strncpy( req.ifr_name, i->ifa_name, IFNAMSIZ - 1 );
 
             if ( ioctl( sock, SIOCGIFINDEX, &req ) == -1 )
             {
@@ -832,7 +832,7 @@ static int get_connection_type()
 
             struct iwreq pwrq;
             memset( &pwrq, 0, sizeof( pwrq ) );
-            strncpy( pwrq.ifr_name, i->ifa_name, IFNAMSIZ );
+            strncpy( pwrq.ifr_name, i->ifa_name, IFNAMSIZ - 1 );
 
             if ( ioctl( sock, SIOCGIWNAME, &pwrq ) == -1 )
             {
