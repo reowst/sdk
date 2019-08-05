@@ -1846,7 +1846,7 @@ namespace next
             memcpy( &int_value, &value, 4 );
         }
         bool result = stream.SerializeBits( int_value, 32 );
-        if ( Stream::IsReading )
+        if ( Stream::IsReading && result )
         {
             memcpy( &value, &int_value, 4 );
         }
