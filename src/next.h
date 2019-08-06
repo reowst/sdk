@@ -1,5 +1,5 @@
 /*
-    Network Next SDK v3.1.0
+    Network Next SDK 3.1.3
 
     Copyright © 2017 - 2019 Network Next, Inc.
 
@@ -30,11 +30,11 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define NEXT_VERSION_FULL                                   "3.1.0"
+#define NEXT_VERSION_FULL                                   "3.1.3"
 #define NEXT_VERSION_MAJOR                                      "3"
 #define NEXT_VERSION_MINOR                                      "1"
-#define NEXT_VERSION_PATCH                                      "0"
-#define NEXT_VERSION_GITHUB                             "c779d369a"
+#define NEXT_VERSION_PATCH                                      "3"
+#define NEXT_VERSION_GITHUB                             "1baf60853"
 
 #define NEXT_OK                                                   0
 #define NEXT_ERROR                                               -1
@@ -44,8 +44,8 @@
 
 #define NEXT_LOG_LEVEL_NONE                                       0
 #define NEXT_LOG_LEVEL_ERROR                                      1
-#define NEXT_LOG_LEVEL_WARN                                       2
-#define NEXT_LOG_LEVEL_INFO                                       3
+#define NEXT_LOG_LEVEL_INFO                                       2
+#define NEXT_LOG_LEVEL_WARN                                       3
 #define NEXT_LOG_LEVEL_DEBUG                                      4
 
 #define NEXT_ADDRESS_NONE                                         0

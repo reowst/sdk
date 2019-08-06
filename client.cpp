@@ -1,5 +1,5 @@
 /*
-    Network Next SDK v3.1.0
+    Network Next SDK 3.1.3
 
     Copyright © 2017 - 2019 Network Next, Inc.
 
@@ -50,8 +50,6 @@ int main()
     
     next_init();
 
-    next_log_level( NEXT_LOG_LEVEL_INFO );
-    
     next_client_t * client = next_client_create( customer_public_key, NULL, client_packet_received );
 
     if ( client == NULL )
@@ -64,7 +62,7 @@ int main()
 
     uint8_t packet_data[32];
     memset( packet_data, 0, sizeof( packet_data ) );
-    
+
     while ( !quit )
     {
         next_client_update( client );
@@ -73,7 +71,7 @@ int main()
         
         next_sleep( 1.0f / 60.0f );
     }
-    
+
     next_client_destroy( client );
     
     next_term();

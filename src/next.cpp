@@ -1,5 +1,5 @@
 /*
-    Network Next SDK v3.1.0
+    Network Next SDK 3.1.3
 
     Copyright © 2017 - 2019 Network Next, Inc.
 
@@ -83,7 +83,7 @@
 #if 1
 #define NEXT_VERSION_MAJOR_INT                      3
 #define NEXT_VERSION_MINOR_INT                      1
-#define NEXT_VERSION_PATCH_INT                      0
+#define NEXT_VERSION_PATCH_INT                      3
 #else
 #define NEXT_VERSION_MAJOR_INT                                          0
 #define NEXT_VERSION_MINOR_INT                                          0
@@ -1846,7 +1846,7 @@ namespace next
             memcpy( &int_value, &value, 4 );
         }
         bool result = stream.SerializeBits( int_value, 32 );
-        if ( Stream::IsReading && result )
+        if ( Stream::IsReading )
         {
             memcpy( &value, &int_value, 4 );
         }
@@ -2608,6 +2608,7 @@ struct NextUpgradeRequestPacket
 
 struct NextUpgradeResponsePacket
 {
+    uint8_t client_open_session_sequence;
     uint8_t client_kx_public_key[crypto_kx_PUBLICKEYBYTES];
     uint8_t client_route_public_key[crypto_box_PUBLICKEYBYTES];
     uint8_t upgrade_token[NEXT_UPGRADE_TOKEN_BYTES];
@@ -2615,11 +2616,11 @@ struct NextUpgradeResponsePacket
     NextUpgradeResponsePacket()
     {
         memset( this, 0, sizeof(NextUpgradeResponsePacket) );
-        memset( &upgrade_token, 0, NEXT_UPGRADE_TOKEN_BYTES );
     }
 
     template <typename Stream> bool Serialize( Stream & stream )
     {
+        serialize_bits( stream, client_open_session_sequence, 8 );
         serialize_bytes( stream, client_kx_public_key, crypto_kx_PUBLICKEYBYTES );
         serialize_bytes( stream, client_route_public_key, crypto_box_PUBLICKEYBYTES );
         serialize_bytes( stream, upgrade_token, NEXT_UPGRADE_TOKEN_BYTES );
@@ -3194,9 +3195,9 @@ int next_init()
         return NEXT_ERROR;
     }
 
-    if (sodium_init() == -1)
+    if ( sodium_init() == -1 )
     {
-        next_printf(NEXT_LOG_LEVEL_ERROR, "failed to initialize sodium");
+        next_printf( NEXT_LOG_LEVEL_ERROR, "failed to initialize sodium" );
         return NEXT_ERROR;
     }
 
@@ -3205,6 +3206,12 @@ int next_init()
     next_encrypted_packets[NEXT_CLIENT_STATS_PACKET] = 1;
     next_encrypted_packets[NEXT_ROUTE_UPDATE_PACKET] = 1;
     next_encrypted_packets[NEXT_ROUTE_UPDATE_ACK_PACKET] = 1;
+
+    const char * log_level_override = next_platform_getenv( "NEXT_LOG_LEVEL" );
+    if ( log_level_override )
+    {
+        log_level = atoi( log_level_override );
+    }
 
     return NEXT_OK;
 }
@@ -3461,17 +3468,29 @@ struct next_near_relay_manager_t
     next_ping_history_t ping_history_array[NEXT_MAX_NEAR_RELAYS];
 };
 
+void next_near_relay_manager_reset( next_near_relay_manager_t * manager );
+
 next_near_relay_manager_t * next_near_relay_manager_create()
 {
     next_near_relay_manager_t * manager = (next_near_relay_manager_t*) next_malloc( sizeof(next_near_relay_manager_t) );
     if ( !manager ) 
         return NULL;
+    next_near_relay_manager_reset( manager );
+    return manager;
+}
+
+void next_near_relay_manager_reset( next_near_relay_manager_t * manager )
+{
+    next_assert( manager );
     manager->num_relays = 0;
+    memset( manager->relay_ids, 0, sizeof(manager->relay_ids) );
+    memset( manager->relay_last_ping_time, 0, sizeof(manager->relay_last_ping_time) );
+    memset( manager->relay_addresses, 0, sizeof(manager->relay_addresses) );
+    memset( manager->relay_ping_history, 0, sizeof(manager->relay_ping_history) );
     for ( int i = 0; i < NEXT_MAX_NEAR_RELAYS; ++i )
     {
         next_ping_history_clear( &manager->ping_history_array[i] );
-    }
-    return manager;
+    }    
 }
 
 void next_near_relay_manager_update( next_near_relay_manager_t * manager, int num_near_relays, const uint64_t * near_relay_ids, const next_address_t * near_relay_addresses )
@@ -4704,6 +4723,7 @@ struct next_client_internal_t
     bool session_open;
     bool upgraded;
     bool fallback_to_direct;
+    uint8_t open_session_sequence;
     uint64_t fallback_to_direct_sequence;
     uint64_t upgrade_sequence;
     uint64_t session_id;
@@ -4977,6 +4997,7 @@ int next_client_internal_process_packet_from_server( next_client_internal_t * cl
             }
 
             NextUpgradeResponsePacket response;
+            response.client_open_session_sequence = client->open_session_sequence;
             memcpy( response.client_kx_public_key, client->client_kx_public_key, crypto_kx_PUBLICKEYBYTES );
             memcpy( response.client_route_public_key, client->client_route_public_key, crypto_box_PUBLICKEYBYTES );
             memcpy( response.upgrade_token, packet.upgrade_token, NEXT_UPGRADE_TOKEN_BYTES );
@@ -5224,7 +5245,7 @@ int next_client_internal_process_network_next_packet( next_client_internal_t * c
 
             if ( next_replay_protection_already_received( &client->session_replay_protection, payload_sequence ) )
             {
-                next_printf( NEXT_LOG_LEVEL_WARN, "client already received server to client packet %" PRId64, payload_sequence );
+                next_printf( NEXT_LOG_LEVEL_WARN, "client already received server to client packet %" PRIu64, payload_sequence );
                 return NEXT_ERROR;
             }
 
@@ -5261,7 +5282,7 @@ int next_client_internal_process_network_next_packet( next_client_internal_t * c
 
             if ( next_replay_protection_already_received( &client->session_replay_protection, payload_sequence ) )
             {
-                next_printf( NEXT_LOG_LEVEL_WARN, "client already received pong packet %" PRId64, payload_sequence );
+                next_printf( NEXT_LOG_LEVEL_WARN, "client already received pong packet %" PRIu64, payload_sequence );
                 return NEXT_ERROR;
             }
 
@@ -5304,20 +5325,26 @@ void next_client_internal_block_and_receive_packet( next_client_internal_t * cli
             next_queue_push( client->notify_queue, notify );            
         }
     }
-    else if ( packet_data[0] == 255 && packet_bytes <= NEXT_MTU + 9 && from_server_address )
+    else if ( packet_data[0] == 255 && packet_bytes <= NEXT_MTU + 10 && from_server_address )
     {
         const uint8_t * p = packet_data + 1;
+        uint8_t packet_session_sequence = next_read_uint8( &p );
+        if ( packet_session_sequence != client->open_session_sequence )
+        {
+            next_printf( NEXT_LOG_LEVEL_DEBUG, "client ignored direct packet. session mismatch" );
+            return;
+        }
         uint64_t packet_sequence = next_read_uint64( &p );
         if ( next_replay_protection_already_received( &client->session_replay_protection, packet_sequence ) )
         {
-            next_printf( NEXT_LOG_LEVEL_WARN, "client already received direct packet %" PRId64, packet_sequence );
+            next_printf( NEXT_LOG_LEVEL_WARN, "client already received direct packet %" PRIu64 " (%" PRIu64 ")", packet_sequence, client->session_replay_protection.most_recent_sequence );
             return;
         }
         next_replay_protection_advance_sequence( &client->session_replay_protection, packet_sequence );
         next_client_notify_packet_received_t * notify = (next_client_notify_packet_received_t*) next_malloc( sizeof( next_client_notify_packet_received_t ) );
         notify->type = NEXT_CLIENT_NOTIFY_PACKET_RECEIVED;
-        notify->packet_bytes = packet_bytes - 9;
-        memcpy( notify->packet_data, packet_data + 9, packet_bytes - 9 );
+        notify->packet_bytes = packet_bytes - 10;
+        memcpy( notify->packet_data, packet_data + 10, packet_bytes - 10 );
         {
             next_mutex_guard( client->notify_mutex );
             next_queue_push( client->notify_queue, notify );            
@@ -5360,6 +5387,7 @@ bool next_client_internal_pump_commands( next_client_internal_t * client )
                 next_client_command_open_session_t * open_session_command = (next_client_command_open_session_t*) entry;
                 client->server_address = open_session_command->server_address;
                 client->session_open = true;
+                client->open_session_sequence++;
                 client->last_direct_ping_time = next_time();
                 client->last_stats_update_time = next_time();
                 client->last_stats_report_time = next_time();
@@ -5374,26 +5402,46 @@ bool next_client_internal_pump_commands( next_client_internal_t * client )
             {
                 if ( !client->session_open )
                     break;
+
                 char buffer[NEXT_MAX_ADDRESS_STRING_LENGTH];
                 next_printf( NEXT_LOG_LEVEL_INFO, "client closed session to %s", next_address_to_string( &client->server_address, buffer ) );
+
                 memset( &client->server_address, 0, sizeof(next_address_t) );
                 client->session_open = false;
                 client->upgraded = false;
                 client->fallback_to_direct = false;
+                client->fallback_to_direct_sequence = 0;
                 client->upgrade_sequence = 0;
                 client->session_id = 0;
                 client->send_sequence = 0;
+                client->last_next_ping_time = 0.0;
+                client->last_direct_ping_time = 0.0;
+                client->last_direct_pong_time = 0.0;
+                client->last_stats_update_time = 0.0;
+                client->last_stats_report_time = 0.0;
+                client->route_update_sequence = 0;
+                memset( &client->near_relay_stats, 0, sizeof(next_near_relay_stats_t ) );
+                next_near_relay_manager_reset( client->near_relay_manager );
+                memset( client->client_kx_public_key, 0, crypto_kx_PUBLICKEYBYTES );
+                memset( client->client_kx_private_key, 0, crypto_kx_SECRETKEYBYTES );
+                memset( client->client_send_key, 0, crypto_kx_SESSIONKEYBYTES );
+                memset( client->client_receive_key, 0, crypto_kx_SESSIONKEYBYTES );
+                memset( client->client_route_public_key, 0, crypto_box_PUBLICKEYBYTES );
+                memset( client->client_route_private_key, 0, crypto_box_SECRETKEYBYTES );
                 next_ping_history_clear( &client->next_ping_history );
                 next_ping_history_clear( &client->direct_ping_history );
                 memset( &client->client_stats, 0, sizeof(next_client_stats_t) );
-                memset( client->client_send_key, 0, crypto_kx_SESSIONKEYBYTES );
-                memset( client->client_receive_key, 0, crypto_kx_SESSIONKEYBYTES );
-                memset( client->client_kx_public_key, 0, crypto_kx_PUBLICKEYBYTES );
-                memset( client->client_kx_private_key, 0, crypto_kx_SECRETKEYBYTES );
-                memset( client->client_route_public_key, 0, crypto_box_PUBLICKEYBYTES );
-                memset( client->client_route_private_key, 0, crypto_box_SECRETKEYBYTES );
                 next_replay_protection_reset( &client->replay_protection );
                 next_replay_protection_reset( &client->session_replay_protection );
+
+                next_platform_mutex_acquire( client->bandwidth_mutex );
+                client->bandwidth_over_budget = 0;
+                client->bandwidth_usage_kbps_up = 0;
+                client->bandwidth_usage_kbps_down = 0;
+                client->bandwidth_envelope_kbps_up = 0;
+                client->bandwidth_envelope_kbps_down = 0;
+                next_platform_mutex_release( client->bandwidth_mutex );
+
                 next_route_manager_direct_route( client->route_manager, false, false );
             }
             break;
@@ -5690,6 +5738,7 @@ struct next_client_t
     bool upgraded;
     bool multipath;
     bool fallback_to_direct;
+    uint8_t open_session_sequence;
     uint64_t session_id;
     next_address_t server_address;
     next_client_internal_t * internal;
@@ -5777,6 +5826,8 @@ void next_client_open_session( next_client_t * client, const char * server_addre
     next_assert( client->internal->command_mutex );
     next_assert( client->internal->command_queue );
 
+    next_client_close_session( client );
+
     next_address_t server_address;
     if ( next_address_parse( &server_address, server_address_string ) != NEXT_OK )
     {
@@ -5800,9 +5851,8 @@ void next_client_open_session( next_client_t * client, const char * server_addre
     }
 
     client->session_open = true;
-    client->upgraded = false;
-    client->fallback_to_direct = false;
     client->server_address = server_address;
+    client->open_session_sequence++;
 }
 
 void next_client_close_session( next_client_t * client )
@@ -5820,7 +5870,6 @@ void next_client_close_session( next_client_t * client )
     }
     
     command->type = NEXT_CLIENT_COMMAND_CLOSE_SESSION;
-
     {
         next_mutex_guard( client->internal->command_mutex );    
         next_queue_push( client->internal->command_queue, command );
@@ -5830,8 +5879,11 @@ void next_client_close_session( next_client_t * client )
     client->upgraded = false;
     client->multipath = false;
     client->fallback_to_direct = false;
-
+    client->session_id = 0;
+    memset( &client->stats, 0, sizeof(next_client_stats_t ) );
     memset( &client->server_address, 0, sizeof(next_address_t) );
+    next_bandwidth_limiter_reset( &client->send_bandwidth );
+    next_bandwidth_limiter_reset( &client->receive_bandwidth );
 }
 
 void next_client_update( next_client_t * client )
@@ -5988,14 +6040,15 @@ void next_client_send_packet( next_client_t * client, const uint8_t * packet_dat
         
         if ( send_direct )
         {
-            // [255][sequence](payload) style packets direct to server
+            // [255][open session sequence][sequence](payload) style packets direct to server
 
-            uint8_t buffer[9+NEXT_MTU];
+            uint8_t buffer[10+NEXT_MTU];
             uint8_t * p = buffer;
             next_write_uint8( &p, 255 );
+            next_write_uint8( &p, client->open_session_sequence );
             next_write_uint64( &p, send_sequence );
-            memcpy( buffer+9, packet_data, packet_bytes );
-            next_platform_socket_send_packet( client->internal->socket, &client->server_address, buffer, packet_bytes + 9 );
+            memcpy( buffer+10, packet_data, packet_bytes );
+            next_platform_socket_send_packet( client->internal->socket, &client->server_address, buffer, packet_bytes + 10 );
         }
     }
     else
@@ -6657,6 +6710,7 @@ struct next_session_entry_t
     uint64_t user_id;
     uint64_t platform_id_override;
     uint64_t tag;
+    uint8_t client_open_session_sequence;
 
     bool stats_fallback_to_direct;
     uint64_t stats_fallback_to_direct_sequence;
@@ -7987,6 +8041,7 @@ int next_server_internal_process_packet( next_server_internal_t * server, const 
                 entry->user_id = pending_entry->user_id;
                 entry->platform_id_override = pending_entry->platform_id;
                 entry->tag = pending_entry->tag;
+                entry->client_open_session_sequence = packet.client_open_session_sequence;
 
                 // log that we upgraded
 
@@ -8215,6 +8270,11 @@ int next_server_internal_process_packet( next_server_internal_t * server, const 
             }
 
             next_printf( NEXT_LOG_LEVEL_DEBUG, "server received session response for %" PRIx64 " (%s)", entry->session_id, update_type );
+
+            if ( packet.multipath )
+            {
+                next_printf( NEXT_LOG_LEVEL_DEBUG, "multipath is enabled for session %" PRIx64 " (%s)", entry->session_id );
+            }
 
             entry->update_dirty = true;
             entry->update_type = (uint8_t) packet.response_type;
@@ -8572,30 +8632,36 @@ void next_server_internal_update_sessions( next_server_internal_t * server )
 
     const double current_time = next_time();
     
-    const int max_index = server->session_manager->max_entry_index;
+    int index = 0;
 
-    for ( int i = 0; i <= max_index; ++i )
+    while ( index <= server->session_manager->max_entry_index )
     {
-        if ( server->session_manager->addresses[i].type == NEXT_ADDRESS_NONE )
+        if ( server->session_manager->session_ids[index] == 0 )
+        {
+            ++index;
             continue;
+        }
      
-        next_session_entry_t * entry = &server->session_manager->entries[i];
+        next_session_entry_t * entry = &server->session_manager->entries[index];
 
         if ( entry->last_client_stats_update + NEXT_SESSION_TIMEOUT <= current_time )
         {
             char address_buffer[NEXT_MAX_ADDRESS_STRING_LENGTH];
-            next_printf( NEXT_LOG_LEVEL_DEBUG, "server session timed out for client %s", next_address_to_string( &entry->address, address_buffer ) );
-            next_platform_mutex_acquire( server->session_mutex );
-            next_session_manager_remove_at_index( server->session_manager, i );
-            next_platform_mutex_release( server->session_mutex );
+            next_printf( NEXT_LOG_LEVEL_INFO, "server session timed out for client %s", next_address_to_string( &entry->address, address_buffer ) );
+
             next_server_notify_session_timed_out_t * notify = (next_server_notify_session_timed_out_t*) next_malloc( sizeof( next_server_notify_session_timed_out_t ) );
             notify->type = NEXT_SERVER_NOTIFY_SESSION_TIMED_OUT;
             notify->address = entry->address;
             notify->session_id = entry->session_id;
             {
                 next_mutex_guard( server->notify_mutex );
-                next_queue_push( server->notify_queue, notify );            
+                next_queue_push( server->notify_queue, notify );
             }
+
+            next_platform_mutex_acquire( server->session_mutex );
+            next_session_manager_remove_at_index( server->session_manager, index );
+            next_platform_mutex_release( server->session_mutex );
+
             continue;
         }
 
@@ -8611,9 +8677,9 @@ void next_server_internal_update_sessions( next_server_internal_t * server )
             next_platform_mutex_acquire( server->session_mutex );
             entry->mutex_send_over_network_next = false;
             next_platform_mutex_release( server->session_mutex );
-
-            continue;
         }
+
+        index++;
     }
 }
 
@@ -8640,9 +8706,10 @@ void next_server_internal_block_and_receive_packet( next_server_internal_t * ser
             next_queue_push( server->notify_queue, notify );            
         }
     }
-    else if ( packet_data[0] == 255 && packet_bytes >= 10 && packet_bytes <= NEXT_MTU + 9 )
+    else if ( packet_data[0] == 255 && packet_bytes >= 11 && packet_bytes <= NEXT_MTU + 10 )
     {
         const uint8_t * p = packet_data + 1;
+        uint8_t packet_session_sequence = next_read_uint8( &p );
         uint64_t packet_sequence = next_read_uint64( &p );
         next_session_entry_t * entry = next_session_manager_find_by_address( server->session_manager, &from );
         if ( !entry )
@@ -8650,17 +8717,22 @@ void next_server_internal_block_and_receive_packet( next_server_internal_t * ser
             next_printf( NEXT_LOG_LEVEL_WARN, "server ignored direct packet. could not find session for address" );
             return;
         }
+        if ( packet_session_sequence != entry->client_open_session_sequence )
+        {
+            next_printf( NEXT_LOG_LEVEL_DEBUG, "server ignored direct packet. session mismatch" );
+            return;
+        }
         if ( next_replay_protection_already_received( &entry->session_replay_protection, packet_sequence ) )
         {
-            next_printf( NEXT_LOG_LEVEL_WARN, "server ignored direct packet. already received (%" PRIx64 ",%" PRIx64 ")", packet_sequence, entry->session_replay_protection.most_recent_sequence );
+            next_printf( NEXT_LOG_LEVEL_WARN, "server ignored direct packet. already received (%" PRIx64 " vs. %" PRIx64 ")", packet_sequence, entry->session_replay_protection.most_recent_sequence );
             return;
         }
         next_replay_protection_advance_sequence( &entry->session_replay_protection, packet_sequence );
         next_server_notify_packet_received_t * notify = (next_server_notify_packet_received_t*) next_malloc( sizeof( next_server_notify_packet_received_t ) );
         notify->type = NEXT_SERVER_NOTIFY_PACKET_RECEIVED;
         notify->from = from;
-        notify->packet_bytes = packet_bytes - 9;
-        memcpy( notify->packet_data, packet_data + 9, packet_bytes - 9 );
+        notify->packet_bytes = packet_bytes - 10;
+        memcpy( notify->packet_data, packet_data + 10, packet_bytes - 10 );
         {
             next_mutex_guard( server->notify_mutex );
             next_queue_push( server->notify_queue, notify );            
@@ -9326,6 +9398,7 @@ void next_server_send_packet( next_server_t * server, const next_address_t * to_
     {
         bool multipath = false;
         int envelope_kbps_down = 0;
+        uint8_t open_session_sequence = 0;
         uint64_t send_sequence = 0;
         uint64_t session_id = 0;
         uint8_t session_version = 0;
@@ -9343,6 +9416,7 @@ void next_server_send_packet( next_server_t * server, const next_address_t * to_
             send_upgraded_direct = !send_over_network_next || multipath;
             send_sequence = internal_entry->mutex_send_sequence++;
             send_sequence |= uint64_t(1) << 63;
+            open_session_sequence = internal_entry->client_open_session_sequence;
             session_id = internal_entry->mutex_session_id;
             session_version = internal_entry->mutex_session_version;
             session_address = internal_entry->mutex_send_address;
@@ -9390,14 +9464,15 @@ void next_server_send_packet( next_server_t * server, const next_address_t * to_
 
             if ( send_upgraded_direct )
             {
-                // [255][sequence](payload) style packet direct to client
+                // [255][open session sequence][packet sequence](payload) style packet direct to client
 
-                uint8_t buffer[9+NEXT_MTU];
+                uint8_t buffer[10+NEXT_MTU];
                 uint8_t * p = buffer;
                 next_write_uint8( &p, 255 );
+                next_write_uint8( &p, open_session_sequence );
                 next_write_uint64( &p, send_sequence );
-                memcpy( buffer+9, packet_data, packet_bytes );
-                next_platform_socket_send_packet( server->internal->socket, to_address, buffer, packet_bytes + 9 );
+                memcpy( buffer+10, packet_data, packet_bytes );
+                next_platform_socket_send_packet( server->internal->socket, to_address, buffer, packet_bytes + 10 );
             }
         }
     }

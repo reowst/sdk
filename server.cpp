@@ -1,5 +1,5 @@
 /*
-    Network Next SDK v3.1.0
+    Network Next SDK 3.1.3
 
     Copyright © 2017 - 2019 Network Next, Inc.
 
@@ -57,8 +57,6 @@ int main()
 
     next_init(); 
     
-    next_log_level( NEXT_LOG_LEVEL_INFO );
-
     next_server_t * server = next_server_create( customer_private_key, "127.0.0.1:32202", "0.0.0.0:32202", NULL, server_packet_received );
 
     if ( server == NULL )

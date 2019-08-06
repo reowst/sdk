@@ -1,5 +1,5 @@
 /*
-    Network Next SDK v3.1.0
+    Network Next SDK 3.1.3
 
     Copyright © 2017 - 2019 Network Next, Inc.
 
@@ -360,7 +360,7 @@ void next_platform_socket_send_packet( next_platform_socket_t * socket, const ne
         {
             char address_string[NEXT_MAX_ADDRESS_STRING_LENGTH];
             next_address_to_string( to, address_string );
-            next_printf( NEXT_LOG_LEVEL_ERROR, "sendto (%s) failed: %s", address_string, strerror( errno ) );
+            next_printf( NEXT_LOG_LEVEL_DEBUG, "sendto (%s) failed: %s", address_string, strerror( errno ) );
         }
     }
     else if ( to->type == NEXT_ADDRESS_IPV4 )
@@ -378,7 +378,7 @@ void next_platform_socket_send_packet( next_platform_socket_t * socket, const ne
         {
             char address_string[NEXT_MAX_ADDRESS_STRING_LENGTH];
             next_address_to_string( to, address_string );
-            next_printf( NEXT_LOG_LEVEL_ERROR, "sendto (%s) failed: %s", address_string, strerror( errno ) );
+            next_printf( NEXT_LOG_LEVEL_DEBUG, "sendto (%s) failed: %s", address_string, strerror( errno ) );
         }
     }
     else
@@ -406,7 +406,7 @@ int next_platform_socket_receive_packet( next_platform_socket_t * socket, next_a
             return 0;
         }
 
-        next_printf( NEXT_LOG_LEVEL_ERROR, "recvfrom failed with error %d", errno );
+        next_printf( NEXT_LOG_LEVEL_DEBUG, "recvfrom failed with error %d", errno );
         
         return 0;
     }
@@ -803,7 +803,7 @@ static int get_connection_type()
         {
             struct ifreq req;
             memset( &req, 0, sizeof( req ) );
-            strncpy( req.ifr_name, i->ifa_name, IFNAMSIZ - 1 );
+            strncpy( req.ifr_name, i->ifa_name, IFNAMSIZ );
 
             if ( ioctl( sock, SIOCGIFINDEX, &req ) == -1 )
             {
@@ -832,7 +832,7 @@ static int get_connection_type()
 
             struct iwreq pwrq;
             memset( &pwrq, 0, sizeof( pwrq ) );
-            strncpy( pwrq.ifr_name, i->ifa_name, IFNAMSIZ - 1 );
+            strncpy( pwrq.ifr_name, i->ifa_name, IFNAMSIZ );
 
             if ( ioctl( sock, SIOCGIWNAME, &pwrq ) == -1 )
             {
