@@ -8,10 +8,6 @@
 
 Network Next is a marketplace for premium network transit. 
 
-## How does the marketplace work?
-
-We sell 10 second slices of access to private networks via a two-sided marketplace, in other words, we're basically _Google Adwords for Packets_.
-
 ## Why use Network Next?
 
 Network Next improves the quality of network transit from players around the world to servers hosted in datacenters. Players have lower latency, fewer hitches, and less packet loss when they play over Network Next.
@@ -35,10 +31,6 @@ No. It's completely seamless, but at the same time we do our best to minimize th
 ## Does Network Next violate Network Neutrality?
 
 No. Routing via bidding process ensures that we remain _supplier neutral_ and always steer traffic across the route with the best performance at the best price, without favoring any one buyer or supplier over another.
-
-## Will you ever accept strategic investment from network infrastructure?
-
-No. Doing so would violate the neutrality of our marketplace.
 
 ## Can suppliers specify a different price depending on the buyer?
 
@@ -70,7 +62,7 @@ Private networks reserve capacity for each player to ensure the best network qua
 
 ## Can there be a different bandwidth envelope up and down?
 
-Yes. Game protocols are often asymmetric, so you may specify different envelopes for traffic up from the client to the server, and down from the server to the client.
+Yes. Game protocols are often asymmetric, so you may specify different envelopes for client to server traffic and server to client traffic.
 
 ## Is the bandwidth envelope per-server, or per-player
 
@@ -84,7 +76,7 @@ Packets that go over the bandwidth envelope are not accelerated and just take th
 
 Not yet, but we're actively working on this feature. Expect it very soon.
  
-## How can I get access to the Network Next portal
+## How do I get access to the Network Next portal
 
 Please contact us at sales@networknext.com and we'll onboard you for a free trial.
 
