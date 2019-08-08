@@ -93,7 +93,7 @@ We work with top edge computing and infrastructure suppliers such as:
 * [Packet](https://packet.com)
 * [Zenlayer](https://zenlayer.com)
 * [Multiplay](https://multiplay.com)
-* [I3D](https://i3d.com)
+* [I3D](https://i3d.net)
 * [Vultr.com](https://vultr.com)
 * [GameServers.com](https://gameservers.com)
 * [AWS](https://aws.amazon.com)
@@ -109,7 +109,7 @@ _And many more we can't talk about yet!_
 We support game servers hosted by:
 
 * [Multiplay](https://multiplay.com)
-* [I3D](https://i3d.com)
+* [I3D](https://i3d.net)
 * [Vultr.com](https://vultr.com)
 * [GameServers.com](https://gameservers.com)
 * [AWS](https://aws.amazon.com)
