@@ -38,7 +38,7 @@ No. Suppliers cannot identify buyers on Network Next and therefore cannot provid
 
 ## What sort of improvements can Network Next provide?
 
-It depends on the time of day, ISP and location of each player, and on the data center where game server is located... but overall across all players, we are typically able to provide significant performance improvements for at least 10% of a player sessions (>10ms latency reduction, or 1% packet loss reduction or greater).
+It depends on the time of day, ISP and location of each player, and on the data center where game server is located, but overall across all players, we are able to provide significant performance improvements for at least 10% of sessions.
 
 ## What's the biggest improvement Network Next has provided?
 
@@ -50,7 +50,7 @@ The average price per-gigabyte is 10c right now, but because Network Next typica
 
 ## Do players have to pay to use Network Next?
 
-No. Players do not have to pay. Our customer is the game developer, not the player.
+No. Our customer is the game developer, not the player.
 
 ## How does billing work?
 
@@ -140,7 +140,7 @@ The Network Next SDK is written in low-level C style C++ so it's easy to call fr
 
 ## What locations are supported by Network Next?
 
-Network Next is deployed worldwide. Please contact sales@networknext.com to discuss a trial so we can ensure that we optimally target the location of your game's userbase.
+Network Next is deployed worldwide.
 
 ## Do you have an Unreal Engine 4 Plugin?
 
@@ -148,7 +148,7 @@ Yes. Please contact sales@networknext.com
 
 ## Do you have a Unity plugin?
 
-Not yet, but we're actively working on it. Please contact sales@networknext.com and let us know you're interested.
+Not yet, but we're actively working on it.
 
 ## Can I use Network Next for player hosted servers?
 
