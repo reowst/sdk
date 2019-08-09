@@ -111,7 +111,6 @@ We support game servers hosted by:
 * [Multiplay](https://multiplay.com)
 * [I3D](https://i3d.net)
 * [Vultr.com](https://vultr.com)
-* [GameServers.com](https://gameservers.com)
 * [AWS](https://aws.amazon.com)
 * [Google](https://cloud.google.com/)
 * [Azure](https://azure.microsoft.com)
@@ -142,7 +141,7 @@ The Network Next SDK is written in low-level C style C++ so it's easy to call fr
 
 ## What locations are supported by Network Next?
 
-Network Next is deployed worldwide.
+Network Next is deployed worldwide except mainland China.
 
 ## Do you have an Unreal Engine 4 Plugin?
 
