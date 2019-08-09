@@ -130,7 +130,7 @@ We support:
 * Xbox One
 * Nintendo Switch
 
-Access to console platform support requires proof that you are a registered developer for that platform. Please contact sales@networknext.com for more information.
+Access to consoles requires proof you are a registered developer for that platform. Please contact sales@networknext.com for more information.
 
 ## What if my platform isn't listed above
 
