@@ -120,6 +120,8 @@ If you'd like to evaluate Network Next but you host game servers somewhere else,
 
 ## What platforms do you support?
 
+We support:
+
 * PC
 * Mac
 * Linux
