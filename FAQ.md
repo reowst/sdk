@@ -82,7 +82,7 @@ Please contact us at sales@networknext.com and we'll onboard you for a free tria
 
 ## What games use Network Next?
 
-Network Next is in production with [Rocket League](https://rocketleague.com) for several months now, and we accelerate millions of sessions every day. We're also live with several other games we haven't announced yet.
+Network Next is used by [Rocket League](https://rocketleague.com) and we accelerate millions of sessions every day. We're also live with several other games we haven't announced yet.
 
 ## What suppliers work with Network Next?
 
