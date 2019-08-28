@@ -141,7 +141,7 @@ The Network Next SDK is written in low-level C style C++ so it's easy to call fr
 
 ## What locations are supported by Network Next?
 
-Network Next is deployed worldwide except mainland China.
+Network Next is deployed worldwide!
 
 ## Do you have an Unreal Engine 4 Plugin?
 
