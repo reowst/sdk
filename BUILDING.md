@@ -14,7 +14,7 @@ _OR..._
 
 * Create an account on GitHub if you don't have one already: https://github.com
 
-* Clone the SDK git repository: 
+* Clone the SDK git repository:
 ```
 git clone git@github.com:networknext/sdk.git
 ```
@@ -144,7 +144,7 @@ These instructions are designed for Ubuntu 14.04-18.04.
    ```shell
    sudo apt install build-essential
    ```
-   
+
 * Install libsodium:
 
    ```shell
@@ -188,6 +188,17 @@ These instructions are designed for Ubuntu 14.04-18.04.
     make config=<config>
     ./bin/server &
     ./bin/client
+    ```
+
+## If you are developing on Docker
+
+And why wouldn't you be?
+
+
+    ```shell
+    docker build -t networknext .
+    docker run -ti --rm networknext bin/server
+    docker run -ti --rm networknext bin/client
     ```
 
 * [Go to USAGE.md for next steps](https://github.com/networknext/sdk/blob/master/USAGE.md)
