@@ -1,12 +1,12 @@
-# Network Next FAQ
+<img src="https://static.wixstatic.com/media/799fd4_0512b6edaeea4017a35613b4c0e9fc0b~mv2.jpg/v1/fill/w_1200,h_140,al_c,q_80,usm_0.66_1.00_0.01/networknext_logo_colour_black_RGB_tightc.jpg" alt="Network Next" width="600"/>
+
+<br>
+
+# Frequently Asked Questions
 
 ## What is Network Next?
 
 Network Next is a marketplace for premium network transit. 
-
-## How does the marketplace work?
-
-We sell 10 second slices of access to private networks via a two-sided marketplace, in other words, we're basically _Google Adwords for Packets_.
 
 ## Why use Network Next?
 
@@ -16,9 +16,21 @@ Network Next improves the quality of network transit from players around the wor
 
 Network Next SDK steers UDP game traffic across the best path from players to game servers via centrally planned routing driven by a marketplace bidding system run once every 10 seconds per-player.
 
+## Wait what? Say that again...
+
+Every 10 seconds, suppliers compete on performance and price to carry your game's UDP traffic. Network Next steers your game traffic across this route, changing the route dynamically - _without your players noticing_ - once every 10 seconds if a better or cheaper route becomes available.
+
+## Does Network Next change the player route all the time?
+
+No. Typically Network Next finds a high quality route and sticks with it, however if the current route degrades, or if we find something significantly better, we are able to switch to that route dynamically.
+
+## Do players notice when the route changes?
+
+No. It's completely seamless, but at the same time we do our best to minimize the number of route changes.
+
 ## Does Network Next violate Network Neutrality?
 
-No. Routing via bidding process ensures which ensures that we remain _supplier neutral_ and always steer traffic across the route with the best performance at the best price, without favoring any one buyer or supplier over another.
+No. Routing via bidding process ensures that we remain _supplier neutral_ and always steer traffic across the route with the best performance at the best price, without favoring any one buyer or supplier over another.
 
 ## Can suppliers specify a different price depending on the buyer?
 
@@ -26,7 +38,7 @@ No. Suppliers cannot identify buyers on Network Next and therefore cannot provid
 
 ## What sort of improvements can Network Next provide?
 
-It depends on the time of day, ISP and location of each player, and on the data center where game server is located... but overall across all players, we are typically able to provide significant performance improvements for at least 10% of a playerbase (>10ms latency reduction, or 1% packet loss reduction or greater).
+It depends on the time of day, ISP and location of each player, and on the data center where game server is located, but overall across all players, we are able to provide significant performance improvements for at least 10% of sessions.
 
 ## What's the biggest improvement Network Next has provided?
 
@@ -34,25 +46,43 @@ We've seen players with over 1000ms round trip time reduced to less than 50ms an
 
 ## How much does Network Next cost?
 
-Bandwidth for players where we provide significant improvement costs around 10c per-gigabyte on average right now, but Network Next typically targets only the bottom 10% that need help at any time, giving an amortized cost of 1c per-GB.
+The average price per-gigabyte is 10c right now, but because Network Next typically targets only the bottom 10% that need help at any time, the amortized cost is just 1c per-GB.
 
 ## Do players have to pay to use Network Next?
 
-No. Players do not have to pay. Our customer is the game developer, not the player.
+No. Our customer is the game developer, not the player.
 
 ## How does billing work?
 
-Because the private networks we work with reserve capacity for each player, Network Next bills on the envelope of traffic, rather than the actual usage.
-
 Each month we sum up the total of 10 second bandwidth slices served by all suppliers for a game (often multiple suppliers are involved in each route), and that is the amount we bill to the game developer.
 
-## How can I get access to the Network Next portal
+## Do you bill on bandwidth usage or on the amount reserved?
+
+Private networks reserve capacity for each player to ensure the best network quality, so we bill on the bandwidth envelope specified, not on the amount actually used.
+
+## Can there be a different bandwidth envelope up and down?
+
+Yes. Game protocols are often asymmetric, so you may specify different envelopes for client to server traffic and server to client traffic.
+
+## Is the bandwidth envelope per-server, or per-player
+
+Each player has their own bandwidth envelope.
+
+## What happens if I go over the bandwidth envelope?
+
+Packets that go over the bandwidth envelope are not accelerated and just take the public internet.
+
+## Can I change the bandwidth envelope over time?
+
+Not yet, but we're actively working on this feature. Expect it very soon.
+ 
+## How do I get access to the Network Next portal
 
 Please contact us at sales@networknext.com and we'll onboard you for a free trial.
 
 ## What games use Network Next?
 
-Network Next is in production with [Rocket League](https://rocketleague.com) for several months now, and we accelerate millions of players every day. We're also live with several other games we haven't announced yet!
+Network Next is used by [Rocket League](https://rocketleague.com) and we accelerate millions of sessions every day. We're also live with several other games we haven't announced yet.
 
 ## What suppliers work with Network Next?
 
@@ -63,7 +93,7 @@ We work with top edge computing and infrastructure suppliers such as:
 * [Packet](https://packet.com)
 * [Zenlayer](https://zenlayer.com)
 * [Multiplay](https://multiplay.com)
-* [I3D](https://i3d.com)
+* [I3D](https://i3d.net)
 * [Vultr.com](https://vultr.com)
 * [GameServers.com](https://gameservers.com)
 * [AWS](https://aws.amazon.com)
@@ -79,9 +109,8 @@ _And many more we can't talk about yet!_
 We support game servers hosted by:
 
 * [Multiplay](https://multiplay.com)
-* [I3D](https://i3d.com)
+* [I3D](https://i3d.net)
 * [Vultr.com](https://vultr.com)
-* [GameServers.com](https://gameservers.com)
 * [AWS](https://aws.amazon.com)
 * [Google](https://cloud.google.com/)
 * [Azure](https://azure.microsoft.com)
@@ -89,6 +118,8 @@ We support game servers hosted by:
 If you'd like to evaluate Network Next but you host game servers somewhere else, please let us know at sales@networknext.com
 
 ## What platforms do you support?
+
+We support:
 
 * PC
 * Mac
@@ -98,7 +129,7 @@ If you'd like to evaluate Network Next but you host game servers somewhere else,
 * Xbox One
 * Nintendo Switch
 
-Access to console platform support requires proof that you are a registered developer for that platform. Please contact sales@networknext.com for more information.
+Access to consoles requires proof you are a registered developer for that platform. Please contact sales@networknext.com for more information.
 
 ## What if my platform isn't listed above
 
@@ -110,7 +141,7 @@ The Network Next SDK is written in low-level C style C++ so it's easy to call fr
 
 ## What locations are supported by Network Next?
 
-Network Next is deployed worldwide. Please contact sales@networknext.com to discuss a trial so we can ensure that we optimally target the location of your game's userbase.
+Network Next is deployed worldwide!
 
 ## Do you have an Unreal Engine 4 Plugin?
 
@@ -118,7 +149,7 @@ Yes. Please contact sales@networknext.com
 
 ## Do you have a Unity plugin?
 
-Not yet, but we're actively working on it. Please contact sales@networknext.com and let us know you're interested.
+Not yet, but we're actively working on it.
 
 ## Can I use Network Next for player hosted servers?
 
@@ -134,7 +165,7 @@ Not yet, but in the future we may be able to provide benefit via a TCP shim that
 
 ## Can I use Network Next to accelerate my WebRTC game?
 
-Not yet. We are actively investigating this as an option. Please talk to us so we can understand your use case sales@networknext.com
+Not yet. We are actively investigating this as an option. Please contact sales@networknext.com
 
 ## Will players be disconnected from my game if Network Next goes down?
 
@@ -142,4 +173,4 @@ No. If our SDK cannot talk to our backend for any reason, players automatically 
 
 ## Are you hiring?
 
-Always. https://www.networknext.com/careers
+Yes. https://www.networknext.com/careers

@@ -1,3 +1,7 @@
+<img src="https://static.wixstatic.com/media/799fd4_0512b6edaeea4017a35613b4c0e9fc0b~mv2.jpg/v1/fill/w_1200,h_140,al_c,q_80,usm_0.66_1.00_0.01/networknext_logo_colour_black_RGB_tightc.jpg" alt="Network Next" width="600"/>
+
+<br>
+
 # How to build the Network Next SDK
 
 ## All platforms
@@ -10,7 +14,7 @@ _OR..._
 
 * Create an account on GitHub if you don't have one already: https://github.com
 
-* Clone the SDK git repository: 
+* Clone the SDK git repository:
 ```
 git clone git@github.com:networknext/sdk.git
 ```
@@ -141,6 +145,12 @@ These instructions are designed for Ubuntu 14.04-18.04.
    sudo apt install build-essential
    ```
 
+* Install libsodium:
+
+   ```shell
+   sudo apt install libsodium-dev
+   ```
+
 * Install premake:
 
    ```shell
@@ -178,6 +188,17 @@ These instructions are designed for Ubuntu 14.04-18.04.
     make config=<config>
     ./bin/server &
     ./bin/client
+    ```
+
+## If you are developing on Docker
+
+And why wouldn't you be?
+
+
+    ```shell
+    docker build -t networknext .
+    docker run -ti --rm networknext bin/server
+    docker run -ti --rm networknext bin/client
     ```
 
 * [Go to USAGE.md for next steps](https://github.com/networknext/sdk/blob/master/USAGE.md)
