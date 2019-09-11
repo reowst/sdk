@@ -1,5 +1,5 @@
 /*
-    Network Next SDK v3.1.0
+    Network Next SDK 3.2.2
 
     Copyright © 2017 - 2019 Network Next, Inc.
 
@@ -34,10 +34,10 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <ws2ipdef.h>
-#include <iphlpapi.h>
 #include <malloc.h>
 #include <wininet.h>
-#pragma pack(push, 8)
+#include <iphlpapi.h>
+#pragma pack(pop)
 
 #pragma comment( lib, "WS2_32.lib" )
 #pragma comment( lib, "IPHLPAPI.lib" )
@@ -46,9 +46,13 @@
 #undef SetPort
 #endif // #ifdef SetPort
 
-extern void * next_malloc( size_t bytes );
+NEXT_PACK_PUSH()
 
-extern void next_free( void * p );
+extern void * next_global_context;
+
+extern void * next_malloc( void * context, size_t bytes );
+
+extern void next_free( void * context, void * p );
 
 static int get_connection_type();
 
@@ -87,11 +91,13 @@ const char * next_platform_getenv( const char * var )
 
 // threads
 
-next_platform_thread_t * next_platform_thread_create( next_platform_thread_func_t * fn, void * arg )
+next_platform_thread_t * next_platform_thread_create( void * context, next_platform_thread_func_t * fn, void * arg )
 {
-    next_platform_thread_t * thread = (next_platform_thread_t*) next_malloc( sizeof( next_platform_thread_t ) );
+    next_platform_thread_t * thread = (next_platform_thread_t*) next_malloc( context, sizeof( next_platform_thread_t ) );
 
     next_assert( thread );
+
+    thread->context = context;
 
     thread->handle = CreateThread
     (
@@ -105,7 +111,7 @@ next_platform_thread_t * next_platform_thread_create( next_platform_thread_func_
 
     if ( thread->handle == NULL )
     {
-        next_free( thread );
+        next_free( context, thread );
         return NULL;
     }
 
@@ -121,18 +127,20 @@ void next_platform_thread_join( next_platform_thread_t * thread )
 void next_platform_thread_destroy( next_platform_thread_t * thread )
 {
     next_assert( thread );
-    next_free( thread );
+    next_free( thread->context, thread );
 }
 
-next_platform_mutex_t * next_platform_mutex_create()
+next_platform_mutex_t * next_platform_mutex_create( void * context )
 {
-    next_platform_mutex_t * mutex = (next_platform_mutex_t *) next_malloc( sizeof( next_platform_mutex_t ) );
+    next_platform_mutex_t * mutex = (next_platform_mutex_t *) next_malloc( context, sizeof( next_platform_mutex_t ) );
 
     next_assert( mutex );
 
+    mutex->context = context;
+
     if ( !InitializeCriticalSectionAndSpinCount( &mutex->handle, 0xFF ) )
     {
-        next_free( mutex );
+        next_free( context, mutex );
         return NULL;
     }
 
@@ -155,7 +163,7 @@ void next_platform_mutex_destroy( next_platform_mutex_t * mutex )
 {
     next_assert( mutex );
     DeleteCriticalSection( &mutex->handle );
-    next_free( mutex );
+    next_free( mutex->context, mutex );
 }
 
 // time
@@ -280,11 +288,14 @@ int next_platform_connection_type()
 
 void next_platform_socket_destroy( next_platform_socket_t * );
 
-next_platform_socket_t * next_platform_socket_create( next_address_t * address, int socket_type, float timeout_seconds, int send_buffer_size, int receive_buffer_size )
+next_platform_socket_t * next_platform_socket_create( void * context, next_address_t * address, int socket_type, float timeout_seconds, int send_buffer_size, int receive_buffer_size )
 {
-    next_platform_socket_t * s = (next_platform_socket_t *) next_malloc( sizeof( next_platform_socket_t ) );
+    next_platform_socket_t * s = (next_platform_socket_t *) next_malloc( context, sizeof( next_platform_socket_t ) );
 
     next_assert( s );
+
+    s->context = context;
+
     next_assert( address );
     next_assert( address->type != NEXT_ADDRESS_NONE );
 
@@ -295,7 +306,7 @@ next_platform_socket_t * next_platform_socket_create( next_address_t * address, 
     if ( s->handle == INVALID_SOCKET )
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "failed to create socket" );
-        next_free( s );
+        next_free( context, s );
         return NULL;
     }
 
@@ -437,7 +448,7 @@ void next_platform_socket_destroy( next_platform_socket_t * socket )
         socket->handle = 0;
     }
 
-    next_free( socket );
+    next_free( socket->context, socket );
 }
 
 void next_platform_socket_send_packet( next_platform_socket_t * socket, const next_address_t * to, const void * packet_data, int packet_bytes )
@@ -463,7 +474,9 @@ void next_platform_socket_send_packet( next_platform_socket_t * socket, const ne
         {
             char address_string[NEXT_MAX_ADDRESS_STRING_LENGTH];
             next_address_to_string( to, address_string );
-            next_printf( NEXT_LOG_LEVEL_ERROR, "sendto (%s) failed: %s", address_string, strerror( errno ) );
+            char error_string[256] = {0};
+            strerror_s( error_string, sizeof( error_string ), errno );
+            next_printf( NEXT_LOG_LEVEL_DEBUG, "sendto (%s) failed: %s", address_string, error_string );
         }
     }
     else if ( to->type == NEXT_ADDRESS_IPV4 )
@@ -481,7 +494,9 @@ void next_platform_socket_send_packet( next_platform_socket_t * socket, const ne
         {
             char address_string[NEXT_MAX_ADDRESS_STRING_LENGTH];
             next_address_to_string( to, address_string );
-            next_printf( NEXT_LOG_LEVEL_ERROR, "sendto (%s) failed: %s", address_string, strerror( errno ) );
+            char error_string[256] = {0};
+            strerror_s( error_string, sizeof( error_string ), errno );
+            next_printf( NEXT_LOG_LEVEL_DEBUG, "sendto (%s) failed: %s", address_string, error_string );
         }
     }
     else
@@ -511,7 +526,7 @@ int next_platform_socket_receive_packet( next_platform_socket_t * socket, next_a
         if ( error == WSAEWOULDBLOCK || error == WSAETIMEDOUT || error == WSAECONNRESET )
             return 0;
 
-        next_printf( NEXT_LOG_LEVEL_ERROR, "recvfrom failed with error %d", error );
+        next_printf( NEXT_LOG_LEVEL_DEBUG, "recvfrom failed with error %d", error );
 
         return 0;
     }
@@ -554,7 +569,7 @@ static int get_connection_type()
 
     do
     {
-        addresses = (IP_ADAPTER_ADDRESSES *)( next_malloc( buffer_size ) );
+        addresses = (IP_ADAPTER_ADDRESSES *)( next_malloc( next_global_context, buffer_size ) );
 
         ULONG return_code = GetAdaptersAddresses( AF_INET, 0, NULL, addresses, &buffer_size );
 
@@ -565,14 +580,13 @@ static int get_connection_type()
         }
         else if ( return_code == ERROR_BUFFER_OVERFLOW )
         {
-            // try again with new buffer size
-            next_free( addresses );
+            next_free( next_global_context, addresses );
             continue;
         }
         else
         {
             // error
-            next_free( addresses );
+            next_free( next_global_context, addresses );
             return NEXT_CONNECTION_TYPE_UNKNOWN;
         }
     }
@@ -600,11 +614,13 @@ static int get_connection_type()
 
     if ( addresses )
     {
-        next_free( addresses );
+        next_free( next_global_context, addresses );
     }
 
     return result;
 }
+
+NEXT_PACK_POP()
 
 #else // #if NEXT_PLATFORM == NEXT_PLATFORM_WINDOWS
 

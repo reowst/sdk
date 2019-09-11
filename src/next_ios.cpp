@@ -1,5 +1,5 @@
 /*
-    Network Next SDK v3.1.0
+    Network Next SDK 3.2.2
 
     Copyright © 2017 - 2019 Network Next, Inc.
 
@@ -42,9 +42,11 @@
 #include <SystemConfiguration/SystemConfiguration.h>
 #include <CoreFoundation/CoreFoundation.h>
 
-extern void * next_malloc( size_t bytes );
+NEXT_PACK_PUSH()
 
-extern void next_free( void * p );
+extern void * next_malloc( void * context, size_t bytes );
+
+extern void next_free( void * context, void * p );
 
 // ---------------------------------------------------
 
@@ -189,14 +191,16 @@ void next_platform_sleep( double time )
 
 void next_platform_socket_destroy( next_platform_socket_t * socket );
 
-next_platform_socket_t * next_platform_socket_create( next_address_t * address, int socket_type, float timeout_seconds, int send_buffer_size, int receive_buffer_size )
+next_platform_socket_t * next_platform_socket_create( void * context, next_address_t * address, int socket_type, float timeout_seconds, int send_buffer_size, int receive_buffer_size )
 {
     next_assert( address );
     next_assert( address->type != NEXT_ADDRESS_NONE );
 
-    next_platform_socket_t * socket = (next_platform_socket_t*) next_malloc( sizeof( next_platform_socket_t ) );
+    next_platform_socket_t * socket = (next_platform_socket_t*) next_malloc( context, sizeof( next_platform_socket_t ) );
 
     next_assert( socket );
+
+    socket->context = context;
 
     // create socket
 
@@ -345,7 +349,7 @@ void next_platform_socket_destroy( next_platform_socket_t * socket )
     {
         close( socket->handle );
     }
-    next_free( socket );
+    next_free( socket->context, socket );
 }
 
 void next_platform_socket_send_packet( next_platform_socket_t * socket, const next_address_t * to, const void * packet_data, int packet_bytes )
@@ -371,7 +375,7 @@ void next_platform_socket_send_packet( next_platform_socket_t * socket, const ne
         {
             char address_string[NEXT_MAX_ADDRESS_STRING_LENGTH];
             next_address_to_string( to, address_string );
-            next_printf( NEXT_LOG_LEVEL_ERROR, "sendto (%s) failed: %s", address_string, strerror( errno ) );
+            next_printf( NEXT_LOG_LEVEL_DEBUG, "sendto (%s) failed: %s", address_string, strerror( errno ) );
         }
     }
     else if ( to->type == NEXT_ADDRESS_IPV4 )
@@ -389,7 +393,7 @@ void next_platform_socket_send_packet( next_platform_socket_t * socket, const ne
         {
             char address_string[NEXT_MAX_ADDRESS_STRING_LENGTH];
             next_address_to_string( to, address_string );
-            next_printf( NEXT_LOG_LEVEL_ERROR, "sendto (%s) failed: %s", address_string, strerror( errno ) );
+            next_printf( NEXT_LOG_LEVEL_DEBUG, "sendto (%s) failed: %s", address_string, strerror( errno ) );
         }
     }
     else
@@ -417,7 +421,7 @@ int next_platform_socket_receive_packet( next_platform_socket_t * socket, next_a
             return 0;
         }
 
-        next_printf( NEXT_LOG_LEVEL_ERROR, "recvfrom failed with error %d", errno );
+        next_printf( NEXT_LOG_LEVEL_DEBUG, "recvfrom failed with error %d", errno );
         
         return 0;
     }
@@ -455,15 +459,17 @@ int next_platform_socket_receive_packet( next_platform_socket_t * socket, next_a
 
 // ---------------------------------------------------
 
-next_platform_thread_t * next_platform_thread_create( next_platform_thread_func_t * thread_function, void * arg )
+next_platform_thread_t * next_platform_thread_create( void * context, next_platform_thread_func_t * thread_function, void * arg )
 {
-    next_platform_thread_t * thread = (next_platform_thread_t*) next_malloc( sizeof( next_platform_thread_t) );
+    next_platform_thread_t * thread = (next_platform_thread_t*) next_malloc( context, sizeof( next_platform_thread_t) );
 
     next_assert( thread );
+
+    thread->context = context;
     
     if ( pthread_create( &thread->handle, NULL, thread_function, arg ) != 0 )
     {
-        next_free( thread );
+        next_free( context, thread );
         return NULL;
     }
 
@@ -479,16 +485,18 @@ void next_platform_thread_join( next_platform_thread_t * thread )
 void next_platform_thread_destroy( next_platform_thread_t * thread )
 {
     next_assert( thread );
-    next_free( thread );
+    next_free( thread->context, thread );
 }
 
 // ---------------------------------------------------
 
-next_platform_mutex_t * next_platform_mutex_create()
+next_platform_mutex_t * next_platform_mutex_create( void * context )
 {
-    next_platform_mutex_t * mutex = (next_platform_mutex_t*) next_malloc( sizeof(next_platform_mutex_t) ); next_assert( mutex );
+    next_platform_mutex_t * mutex = (next_platform_mutex_t*) next_malloc( context, sizeof(next_platform_mutex_t) ); next_assert( mutex );
 
     next_assert( mutex );
+
+    mutex->context = context;
 
     pthread_mutexattr_t attr;
     pthread_mutexattr_init(&attr);
@@ -498,7 +506,7 @@ next_platform_mutex_t * next_platform_mutex_create()
 
     if ( result != 0 )
     {
-        next_free( mutex );
+        next_free( context, mutex );
         return NULL;
     }
 
@@ -521,10 +529,12 @@ void next_platform_mutex_destroy( next_platform_mutex_t * mutex )
 {
     next_assert( mutex );
     pthread_mutex_destroy( &mutex->handle );
-    next_free( mutex );
+    next_free( mutex->context, mutex );
 }
 
 // ---------------------------------------------------
+
+NEXT_PACK_POP()
 
 #else // #if NEXT_PLATFORM == NEXT_PLATFORM_IOS
 

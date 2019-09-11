@@ -1,5 +1,5 @@
 /*
-    Network Next SDK v3.1.0
+    Network Next SDK 3.2.2
 
     Copyright © 2017 - 2019 Network Next, Inc.
 
@@ -24,6 +24,9 @@
 
 #include "next.h"
 
+#ifndef NEXT_WINDOWS_H
+#define NEXT_WINDOWS_H
+
 #if NEXT_PLATFORM == NEXT_PLATFORM_WINDOWS
 
 #define _WINSOCKAPI_
@@ -42,6 +45,8 @@
 #define NEXT_PLATFORM_HAS_IPV6 1
 #endif
 
+NEXT_PACK_PUSH()
+
 // -------------------------------------
 
 #pragma warning(disable:4996)
@@ -54,6 +59,7 @@
 
 struct next_platform_socket_t
 {
+    void * context;
     next_platform_socket_handle_t handle;
 };
 
@@ -61,6 +67,7 @@ struct next_platform_socket_t
 
 struct next_platform_thread_t
 {
+    void * context;
     HANDLE handle;
 };
 
@@ -76,9 +83,14 @@ typedef next_platform_thread_return_t (NEXT_PLATFORM_THREAD_FUNC next_platform_t
 
 struct next_platform_mutex_t
 {
+    void * context;
     CRITICAL_SECTION handle;
 };
 
 // -------------------------------------
 
+NEXT_PACK_POP()
+
 #endif // #if NEXT_PLATFORM == NEXT_PLATFORM_WINDOWS
+
+#endif // #ifndef NEXT_WINDOWS_H

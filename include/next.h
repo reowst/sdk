@@ -1,5 +1,5 @@
 /*
-    Network Next SDK v3.1.0
+    Network Next SDK 3.2.2
 
     Copyright © 2017 - 2019 Network Next, Inc.
 
@@ -32,11 +32,11 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define NEXT_VERSION_FULL                                   "3.1.0"
+#define NEXT_VERSION_FULL                                   "3.2.2"
 #define NEXT_VERSION_MAJOR                                      "3"
-#define NEXT_VERSION_MINOR                                      "1"
-#define NEXT_VERSION_PATCH                                      "0"
-#define NEXT_VERSION_GITHUB                             "c779d369a"
+#define NEXT_VERSION_MINOR                                      "2"
+#define NEXT_VERSION_PATCH                                      "2"
+#define NEXT_VERSION_GITHUB                             "3dba561b0"
 
 #define NEXT_OK                                                   0
 #define NEXT_ERROR                                               -1
@@ -46,8 +46,8 @@
 
 #define NEXT_LOG_LEVEL_NONE                                       0
 #define NEXT_LOG_LEVEL_ERROR                                      1
-#define NEXT_LOG_LEVEL_WARN                                       2
-#define NEXT_LOG_LEVEL_INFO                                       3
+#define NEXT_LOG_LEVEL_INFO                                       2
+#define NEXT_LOG_LEVEL_WARN                                       3
 #define NEXT_LOG_LEVEL_DEBUG                                      4
 
 #define NEXT_ADDRESS_NONE                                         0
@@ -109,9 +109,21 @@
     #define NEXT_PLATFORM NEXT_PLATFORM_LINUX
 #endif
 
+#if defined( _MSC_VER )
+#define NEXT_PACK_PUSH() __pragma( pack( push, 8 ) )
+#define NEXT_PACK_POP() __pragma( pack( pop ) )
+#elif defined( __llvm__ ) || defined( __clang__ ) || defined( __GNUC__ )
+#define NEXT_PACK_PUSH() _Pragma( "pack( push, 8 )" )
+#define NEXT_PACK_POP() _Pragma( "pack( pop )" )
+#else
+#error unsupported compiler
+#endif
+
+NEXT_PACK_PUSH()
+
 // -----------------------------------------
 
-NEXT_EXPORT_FUNC int next_init();
+NEXT_EXPORT_FUNC int next_init( void * context );
 
 NEXT_EXPORT_FUNC void next_term();
 
@@ -123,7 +135,7 @@ NEXT_EXPORT_FUNC void next_sleep( double time_seconds );
 
 NEXT_EXPORT_FUNC void next_printf( int level, const char * format, ... );
 
-extern void (*next_assert_function_pointer)( const char *, const char *, const char * file, int line );
+extern void (*next_assert_function_pointer)( const char * condition, const char * function, const char * file, int line );
 
 #ifndef NDEBUG
 #define next_assert( condition )                                                            \
@@ -140,11 +152,11 @@ do                                                                              
 
 NEXT_EXPORT_FUNC void next_log_level( int level );
 
-NEXT_EXPORT_FUNC void next_log_function( void (*function)( int level, const char *, ... ) );
+NEXT_EXPORT_FUNC void next_log_function( void (*function)( int level, const char * format, ... ) );
 
-NEXT_EXPORT_FUNC void next_assert_function( void (*function)( const char *, const char *, const char * file, int line ) );
+NEXT_EXPORT_FUNC void next_assert_function( void (*function)( const char * condition, const char * function, const char * file, int line ) );
 
-NEXT_EXPORT_FUNC void next_allocator( void * (*malloc_function)(size_t), void * (*realloc_function)(void*,size_t), void (*free_function)(void*) );
+NEXT_EXPORT_FUNC void next_allocator( void * (*malloc_function)( void * context, size_t bytes ), void (*free_function)( void * context, void * p ) );
 
 // -----------------------------------------
 
@@ -182,7 +194,7 @@ struct next_client_stats_t
 
 struct next_client_t;
 
-NEXT_EXPORT_FUNC next_client_t * next_client_create( const char * customer_public_key_base64, void * callback_context, void (*packet_received_callback)( next_client_t * client, void * context, const uint8_t * packet_data, int packet_bytes ) );
+NEXT_EXPORT_FUNC next_client_t * next_client_create( void * context, const char * customer_public_key_base64, void (*packet_received_callback)( next_client_t * client, void * context, const uint8_t * packet_data, int packet_bytes ) );
 
 NEXT_EXPORT_FUNC void next_client_open_session( next_client_t * client, const char * server_address );
 
@@ -204,13 +216,15 @@ NEXT_EXPORT_FUNC void next_client_destroy( next_client_t * client );
 
 struct next_server_t;
 
-NEXT_EXPORT_FUNC next_server_t * next_server_create( const char * customer_private_key_base64, const char * server_address, const char * bind_address, void * callback_context, void (*packet_received_callback)( next_server_t * server, void * context, const next_address_t * from, const uint8_t * packet_data, int packet_bytes ) );
+NEXT_EXPORT_FUNC next_server_t * next_server_create( void * context, const char * customer_private_key_base64, const char * server_address, const char * bind_address, const char * datacenter, void (*packet_received_callback)( next_server_t * server, void * context, const next_address_t * from, const uint8_t * packet_data, int packet_bytes ) );
 
 NEXT_EXPORT_FUNC uint16_t next_server_port( next_server_t * server );
 
 NEXT_EXPORT_FUNC void next_server_update( next_server_t * server );
 
 NEXT_EXPORT_FUNC uint64_t next_server_upgrade_session( next_server_t * server, const next_address_t * address, uint64_t user_id, uint32_t platform_id, const char * tag );
+
+NEXT_EXPORT_FUNC void next_server_tag_session( next_server_t * server, const next_address_t * address, const char * tag );
 
 NEXT_EXPORT_FUNC int next_server_session_upgraded( next_server_t * server, const next_address_t * address );
 
@@ -223,5 +237,7 @@ NEXT_EXPORT_FUNC void next_server_destroy( next_server_t * server );
 // -----------------------------------------
 
 NEXT_EXPORT_FUNC void next_test();
+
+NEXT_PACK_POP()
 
 #endif // #ifndef NEXT_H

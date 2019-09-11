@@ -1,5 +1,5 @@
 /*
-    Network Next SDK v3.1.0
+    Network Next SDK 3.2.2
 
     Copyright © 2017 - 2019 Network Next, Inc.
 
@@ -54,8 +54,8 @@
 #define NEXT_SECONDS_BETWEEN_SERVER_UPDATES                            10
 #define NEXT_SECONDS_BETWEEN_SESSION_UPDATES                           10
 #define NEXT_UPGRADE_TOKEN_BYTES                                      128
-#define NEXT_MAX_NEAR_RELAYS                                           10
-#define NEXT_NEAR_RELAY_PING_TIME                                     0.1
+#define NEXT_MAX_RELAYS                                                10
+#define NEXT_RELAY_PING_TIME                                          0.1
 #define NEXT_ROUTE_TOKEN_BYTES                                         77
 #define NEXT_ENCRYPTED_ROUTE_TOKEN_BYTES                              117
 #define NEXT_CONTINUE_TOKEN_BYTES                                      18
@@ -82,8 +82,8 @@
 
 #if 1
 #define NEXT_VERSION_MAJOR_INT                      3
-#define NEXT_VERSION_MINOR_INT                      1
-#define NEXT_VERSION_PATCH_INT                      0
+#define NEXT_VERSION_MINOR_INT                      2
+#define NEXT_VERSION_PATCH_INT                      2
 #else
 #define NEXT_VERSION_MAJOR_INT                                          0
 #define NEXT_VERSION_MINOR_INT                                          0
@@ -246,6 +246,8 @@ uint16_t next_htons( uint16_t in )
 #include "next_xboxone.h"
 #endif
 
+NEXT_PACK_PUSH()
+
 extern int next_platform_init();
 
 extern void next_platform_term();
@@ -262,7 +264,7 @@ extern int next_platform_inet_pton6( const char * address_string, uint16_t * add
 
 extern int next_platform_inet_ntop6( const uint16_t * address, char * address_string, size_t address_string_size );
 
-extern next_platform_socket_t * next_platform_socket_create( next_address_t * address, int socket_type, float timeout_seconds, int send_buffer_size, int receive_buffer_size );
+extern next_platform_socket_t * next_platform_socket_create( void * context, next_address_t * address, int socket_type, float timeout_seconds, int send_buffer_size, int receive_buffer_size );
 
 extern void next_platform_socket_destroy( next_platform_socket_t * socket );
 
@@ -274,13 +276,13 @@ extern int next_platform_connection_type();
 
 extern int next_platform_hostname_resolve( const char * hostname, const char * port, next_address_t * address );
 
-extern next_platform_thread_t * next_platform_thread_create( next_platform_thread_func_t * func, void * arg );
+extern next_platform_thread_t * next_platform_thread_create( void * context, next_platform_thread_func_t * func, void * arg );
 
 extern void next_platform_thread_join( next_platform_thread_t * thread );
 
 extern void next_platform_thread_destroy( next_platform_thread_t * thread );
 
-extern next_platform_mutex_t * next_platform_mutex_create();
+extern next_platform_mutex_t * next_platform_mutex_create( void * context );
 
 extern void next_platform_mutex_acquire( next_platform_mutex_t * mutex );
 
@@ -329,9 +331,9 @@ void next_log_level( int level )
     log_level = level;
 }
 
-void (*next_assert_function_pointer)( const char *, const char *, const char * file, int line ) = default_assert_function;
+void (*next_assert_function_pointer)( const char * condition, const char * function, const char * file, int line ) = default_assert_function;
 
-void next_assert_function( void (*function)( const char *, const char *, const char * file, int line ) )
+void next_assert_function( void (*function)( const char * condition, const char * function, const char * file, int line ) )
 {
     next_assert_function_pointer = function;
 }
@@ -362,43 +364,46 @@ static void default_log_function( int level, const char * format, ... )
     fflush( stdout );
 }
 
-static void (*log_function)( int level, const char *, ... ) = default_log_function;
+static void (*log_function)( int level, const char * format, ... ) = default_log_function;
 
-void next_log_function( void (*function)( int level, const char *, ... ) )
+void next_log_function( void (*function)( int level, const char * format, ... ) )
 {
     log_function = function;
 }
 
-static void * (*next_malloc_function)( size_t );
-static void * (*next_realloc_function)( void*, size_t );
-static void (*next_free_function)( void* );
+static void * next_default_malloc_function( void * context, size_t bytes )
+{
+    (void) context;
+    return malloc( bytes );
+}
 
-void next_allocator( void * (*malloc_function)(size_t), void * (*realloc_function)(void*, size_t), void (*free_function)(void*) )
+static void next_default_free_function( void * context, void * p )
+{
+    (void) context;
+    free( p );
+}
+
+static void * (*next_malloc_function)( void * context, size_t bytes ) = next_default_malloc_function;
+static void (*next_free_function)( void * context, void * p ) = next_default_free_function;
+
+void next_allocator( void * (*malloc_function)( void * context, size_t bytes ), void (*free_function)( void * context, void * p ) )
 {
     next_assert( malloc_function );
-    next_assert( realloc_function );
     next_assert( free_function );
     next_malloc_function = malloc_function;
-    next_realloc_function = realloc_function;
     next_free_function = free_function;
 }
 
-void * next_malloc( size_t bytes )
+void * next_malloc( void * context, size_t bytes )
 {
     next_assert( next_malloc_function );
-    return next_malloc_function( bytes );
+    return next_malloc_function( context, bytes );
 }
 
-void * next_realloc( void * p, size_t bytes )
-{
-    next_assert( next_realloc_function );
-    return next_realloc_function( p, bytes );
-}
-
-void next_free( void * p )
+void next_free( void * context, void * p )
 {
     next_assert( next_free_function );
-    return next_free_function( p );
+    return next_free_function( context, p );
 }
 
 void next_printf( int level, const char * format, ... ) 
@@ -1846,7 +1851,7 @@ namespace next
             memcpy( &int_value, &value, 4 );
         }
         bool result = stream.SerializeBits( int_value, 32 );
-        if ( Stream::IsReading )
+        if ( Stream::IsReading && result )
         {
             memcpy( &value, &int_value, 4 );
         }
@@ -2608,6 +2613,7 @@ struct NextUpgradeRequestPacket
 
 struct NextUpgradeResponsePacket
 {
+    uint8_t client_open_session_sequence;
     uint8_t client_kx_public_key[crypto_kx_PUBLICKEYBYTES];
     uint8_t client_route_public_key[crypto_box_PUBLICKEYBYTES];
     uint8_t upgrade_token[NEXT_UPGRADE_TOKEN_BYTES];
@@ -2615,11 +2621,11 @@ struct NextUpgradeResponsePacket
     NextUpgradeResponsePacket()
     {
         memset( this, 0, sizeof(NextUpgradeResponsePacket) );
-        memset( &upgrade_token, 0, NEXT_UPGRADE_TOKEN_BYTES );
     }
 
     template <typename Stream> bool Serialize( Stream & stream )
     {
+        serialize_bits( stream, client_open_session_sequence, 8 );
         serialize_bytes( stream, client_kx_public_key, crypto_kx_PUBLICKEYBYTES );
         serialize_bytes( stream, client_route_public_key, crypto_box_PUBLICKEYBYTES );
         serialize_bytes( stream, upgrade_token, NEXT_UPGRADE_TOKEN_BYTES );
@@ -2729,10 +2735,15 @@ struct NextClientStatsPacket
     float next_jitter;
     float next_packet_loss;
     int num_near_relays;
-    uint64_t near_relay_ids[NEXT_MAX_NEAR_RELAYS];
-    float near_relay_rtt[NEXT_MAX_NEAR_RELAYS];
-    float near_relay_jitter[NEXT_MAX_NEAR_RELAYS];
-    float near_relay_packet_loss[NEXT_MAX_NEAR_RELAYS];
+    uint64_t near_relay_ids[NEXT_MAX_RELAYS];
+    float near_relay_rtt[NEXT_MAX_RELAYS];
+    float near_relay_jitter[NEXT_MAX_RELAYS];
+    float near_relay_packet_loss[NEXT_MAX_RELAYS];
+    int num_far_relays;
+    uint64_t far_relay_ids[NEXT_MAX_RELAYS];
+    float far_relay_rtt[NEXT_MAX_RELAYS];
+    float far_relay_jitter[NEXT_MAX_RELAYS];
+    float far_relay_packet_loss[NEXT_MAX_RELAYS];
 
     NextClientStatsPacket()
     {
@@ -2757,13 +2768,21 @@ struct NextClientStatsPacket
             serialize_float( stream, next_jitter );
             serialize_float( stream, next_packet_loss );
         }
-        serialize_int( stream, num_near_relays, 0, NEXT_MAX_NEAR_RELAYS );
+        serialize_int( stream, num_near_relays, 0, NEXT_MAX_RELAYS );
         for ( int i = 0; i < num_near_relays; ++i )
         {
             serialize_uint64( stream, near_relay_ids[i] );
             serialize_float( stream, near_relay_rtt[i] );
             serialize_float( stream, near_relay_jitter[i] );
             serialize_float( stream, near_relay_packet_loss[i] );
+        }
+        serialize_int( stream, num_far_relays, 0, NEXT_MAX_RELAYS );
+        for ( int i = 0; i < num_far_relays; ++i )
+        {
+            serialize_uint64( stream, far_relay_ids[i] );
+            serialize_float( stream, far_relay_rtt[i] );
+            serialize_float( stream, far_relay_jitter[i] );
+            serialize_float( stream, far_relay_packet_loss[i] );
         }
         return true;
     }
@@ -2774,9 +2793,12 @@ struct NextRouteUpdatePacket
     uint64_t fallback_to_direct_sequence;
     uint64_t sequence;
     bool multipath;
-    int num_relays;
-    uint64_t relay_ids[NEXT_MAX_NEAR_RELAYS];
-    next_address_t relay_addresses[NEXT_MAX_NEAR_RELAYS];
+    int num_near_relays;
+    int num_far_relays;
+    uint64_t near_relay_ids[NEXT_MAX_RELAYS];
+    uint64_t far_relay_ids[NEXT_MAX_RELAYS];
+    next_address_t near_relay_addresses[NEXT_MAX_RELAYS];
+    next_address_t far_relay_addresses[NEXT_MAX_RELAYS];
     uint8_t update_type;
     int num_tokens;
     uint8_t tokens[NEXT_MAX_TOKENS*NEXT_ENCRYPTED_ROUTE_TOKEN_BYTES];
@@ -2790,11 +2812,17 @@ struct NextRouteUpdatePacket
     {
         serialize_uint64( stream, fallback_to_direct_sequence );
         serialize_uint64( stream, sequence );
-        serialize_int( stream, num_relays, 0, NEXT_MAX_NEAR_RELAYS );
-        for ( int i = 0; i < num_relays; ++i )
+        serialize_int( stream, num_near_relays, 0, NEXT_MAX_RELAYS );
+        serialize_int( stream, num_far_relays, 0, NEXT_MAX_RELAYS );
+        for ( int i = 0; i < num_near_relays; ++i )
         {
-            serialize_uint64( stream, relay_ids[i] );
-            serialize_address( stream, relay_addresses[i] );
+            serialize_uint64( stream, near_relay_ids[i] );
+            serialize_address( stream, near_relay_addresses[i] );
+        }
+        for ( int i = 0; i < num_far_relays; ++i )
+        {
+            serialize_uint64( stream, far_relay_ids[i] );
+            serialize_address( stream, far_relay_addresses[i] );
         }
         serialize_int( stream, update_type, 0, NEXT_UPDATE_TYPE_CONTINUE );
         if ( update_type != NEXT_UPDATE_TYPE_DIRECT )
@@ -3171,22 +3199,13 @@ int next_read_packet( uint8_t * packet_data, int packet_bytes, void * packet_obj
 
 static int next_encrypted_packets[256];
 
-int next_init()
+void * next_global_context = NULL;
+
+int next_init( void * context )
 {
-    if ( next_malloc_function == NULL )
-    {
-        next_malloc_function = malloc;
-    }
+    next_assert( next_global_context == NULL );
 
-    if ( next_realloc_function == NULL )
-    {
-        next_realloc_function = realloc;
-    }
-
-    if ( next_free_function == NULL )
-    {
-        next_free_function = free;
-    }
+    next_global_context = context;
 
     if ( next_platform_init() != NEXT_OK )
     {
@@ -3194,9 +3213,9 @@ int next_init()
         return NEXT_ERROR;
     }
 
-    if (sodium_init() == -1)
+    if ( sodium_init() == -1 )
     {
-        next_printf(NEXT_LOG_LEVEL_ERROR, "failed to initialize sodium");
+        next_printf( NEXT_LOG_LEVEL_ERROR, "failed to initialize sodium" );
         return NEXT_ERROR;
     }
 
@@ -3206,18 +3225,27 @@ int next_init()
     next_encrypted_packets[NEXT_ROUTE_UPDATE_PACKET] = 1;
     next_encrypted_packets[NEXT_ROUTE_UPDATE_ACK_PACKET] = 1;
 
+    const char * log_level_override = next_platform_getenv( "NEXT_LOG_LEVEL" );
+    if ( log_level_override )
+    {
+        log_level = atoi( log_level_override );
+    }
+
     return NEXT_OK;
 }
 
 void next_term()
 {
     next_platform_term();
+
+    next_global_context = NULL;
 }
 
 // ---------------------------------------------------------------
 
 struct next_queue_t
 {
+    void * context;
     int size;
     int num_entries;
     int start_index;
@@ -3226,16 +3254,17 @@ struct next_queue_t
 
 void next_queue_destroy( next_queue_t * queue );
 
-next_queue_t * next_queue_create( int size )
+next_queue_t * next_queue_create( void * context, int size )
 {
-    next_queue_t * queue = (next_queue_t*) next_malloc( sizeof(next_queue_t) );
+    next_queue_t * queue = (next_queue_t*) next_malloc( context, sizeof(next_queue_t) );
     next_assert( queue );
     if ( !queue )
         return NULL;
+    queue->context = context;
     queue->size = size;
     queue->num_entries = 0;
     queue->start_index = 0;
-    queue->entries = (void**) malloc( size * sizeof(void*) );
+    queue->entries = (void**) next_malloc( context, size * sizeof(void*) );
     next_assert( queue->entries );
     if ( !queue->entries )
     {
@@ -3245,6 +3274,17 @@ next_queue_t * next_queue_create( int size )
     return queue;
 }
 
+void next_queue_clear( next_queue_t * queue );
+
+void next_queue_destroy( next_queue_t * queue )
+{
+    next_assert( queue );
+    next_queue_clear( queue );
+    next_free( queue->context, queue->entries );
+    memset( queue, 0, sizeof(next_queue_t) );
+    next_free( queue->context, queue );
+}
+
 void next_queue_clear( next_queue_t * queue )
 {
     const int queue_size = queue->size;
@@ -3252,20 +3292,11 @@ void next_queue_clear( next_queue_t * queue )
     for ( int i = 0; i < queue->num_entries; ++i )
     {
         const int index = (start_index + i ) % queue_size;
-        next_free( queue->entries[index] );
+        next_free( queue->context, queue->entries[index] );
         queue->entries[index] = NULL;
     }
     queue->num_entries = 0;
     queue->start_index = 0;
-}
-
-void next_queue_destroy( next_queue_t * queue )
-{
-    next_assert( queue );
-    next_queue_clear( queue );
-    next_free( queue->entries );
-    memset( queue, 0, sizeof(next_queue_t) );
-    next_free( queue );
 }
 
 int next_queue_push( next_queue_t * queue, void * entry )
@@ -3274,7 +3305,7 @@ int next_queue_push( next_queue_t * queue, void * entry )
     next_assert( entry );
     if ( queue->num_entries == queue->size )
     {
-        next_free( entry );
+        next_free( queue->context, entry );
         return NEXT_ERROR;
     }
     int index = ( queue->start_index + queue->num_entries ) % queue->size;
@@ -3442,66 +3473,80 @@ void next_route_stats_from_ping_history( const next_ping_history_t * history, do
 
 // ---------------------------------------------------------------
 
-struct next_near_relay_stats_t
-{
-    int num_near_relays;
-    uint64_t near_relay_ids[NEXT_MAX_NEAR_RELAYS];
-    float near_relay_rtt[NEXT_MAX_NEAR_RELAYS];
-    float near_relay_jitter[NEXT_MAX_NEAR_RELAYS];
-    float near_relay_packet_loss[NEXT_MAX_NEAR_RELAYS];
-};
-
-struct next_near_relay_manager_t
+struct next_relay_stats_t
 {
     int num_relays;
-    uint64_t relay_ids[NEXT_MAX_NEAR_RELAYS];
-    double relay_last_ping_time[NEXT_MAX_NEAR_RELAYS];
-    next_address_t relay_addresses[NEXT_MAX_NEAR_RELAYS];
-    next_ping_history_t * relay_ping_history[NEXT_MAX_NEAR_RELAYS];
-    next_ping_history_t ping_history_array[NEXT_MAX_NEAR_RELAYS];
+    uint64_t relay_ids[NEXT_MAX_RELAYS];
+    float relay_rtt[NEXT_MAX_RELAYS];
+    float relay_jitter[NEXT_MAX_RELAYS];
+    float relay_packet_loss[NEXT_MAX_RELAYS];
 };
 
-next_near_relay_manager_t * next_near_relay_manager_create()
+struct next_relay_manager_t
 {
-    next_near_relay_manager_t * manager = (next_near_relay_manager_t*) next_malloc( sizeof(next_near_relay_manager_t) );
+    void * context;
+    int num_relays;
+    uint64_t relay_ids[NEXT_MAX_RELAYS];
+    double relay_last_ping_time[NEXT_MAX_RELAYS];
+    next_address_t relay_addresses[NEXT_MAX_RELAYS];
+    next_ping_history_t * relay_ping_history[NEXT_MAX_RELAYS];
+    next_ping_history_t ping_history_array[NEXT_MAX_RELAYS];
+};
+
+void next_relay_manager_reset( next_relay_manager_t * manager );
+
+next_relay_manager_t * next_relay_manager_create( void * context )
+{
+    next_relay_manager_t * manager = (next_relay_manager_t*) next_malloc( context, sizeof(next_relay_manager_t) );
     if ( !manager ) 
         return NULL;
-    manager->num_relays = 0;
-    for ( int i = 0; i < NEXT_MAX_NEAR_RELAYS; ++i )
-    {
-        next_ping_history_clear( &manager->ping_history_array[i] );
-    }
+    manager->context = context;
+    next_relay_manager_reset( manager );
     return manager;
 }
 
-void next_near_relay_manager_update( next_near_relay_manager_t * manager, int num_near_relays, const uint64_t * near_relay_ids, const next_address_t * near_relay_addresses )
+void next_relay_manager_reset( next_relay_manager_t * manager )
 {
     next_assert( manager );
-    next_assert( num_near_relays >= 0 );
-    next_assert( num_near_relays <= NEXT_MAX_NEAR_RELAYS );
-    next_assert( near_relay_ids );
-    next_assert( near_relay_addresses );
+    manager->num_relays = 0;
+    memset( manager->relay_ids, 0, sizeof(manager->relay_ids) );
+    memset( manager->relay_last_ping_time, 0, sizeof(manager->relay_last_ping_time) );
+    memset( manager->relay_addresses, 0, sizeof(manager->relay_addresses) );
+    memset( manager->relay_ping_history, 0, sizeof(manager->relay_ping_history) );
+    for ( int i = 0; i < NEXT_MAX_RELAYS; ++i )
+    {
+        next_ping_history_clear( &manager->ping_history_array[i] );
+    }    
+}
+
+void next_relay_manager_update( next_relay_manager_t * manager, int num_relays, const uint64_t * relay_ids, const next_address_t * relay_addresses )
+{
+    next_assert( manager );
+    next_assert( num_relays >= 0 );
+    next_assert( num_relays <= NEXT_MAX_RELAYS );
+    next_assert( relay_ids );
+    next_assert( relay_addresses );
 
     // first copy all current relays that are also in the updated relay relay list
 
-    bool history_slot_taken[NEXT_MAX_NEAR_RELAYS];
+    bool history_slot_taken[NEXT_MAX_RELAYS];
     memset( history_slot_taken, 0, sizeof(history_slot_taken) );
 
-    bool found[NEXT_MAX_NEAR_RELAYS];
+    bool found[NEXT_MAX_RELAYS];
     memset( found, 0, sizeof(found) );
 
-    uint64_t new_relay_ids[NEXT_MAX_NEAR_RELAYS];
-    double new_relay_last_ping_time[NEXT_MAX_NEAR_RELAYS];
-    next_address_t new_relay_addresses[NEXT_MAX_NEAR_RELAYS];
-    next_ping_history_t * new_relay_ping_history[NEXT_MAX_NEAR_RELAYS];
+    uint64_t new_relay_ids[NEXT_MAX_RELAYS];
+    double new_relay_last_ping_time[NEXT_MAX_RELAYS];
+    next_address_t new_relay_addresses[NEXT_MAX_RELAYS];
+    next_ping_history_t * new_relay_ping_history[NEXT_MAX_RELAYS];
 
     int index = 0;
 
     for ( int i = 0; i < manager->num_relays; ++i )
     {
-        for ( int j = 0; j < num_near_relays; ++j )
+        for ( int j = 0; j < num_relays; ++j )
         {
-            if ( manager->relay_ids[i] == near_relay_ids[j] )
+            if ( manager->relay_ids[i] == relay_ids[j] )
             {
                 found[j] = true;
                 new_relay_ids[index] = manager->relay_ids[i];
@@ -3510,7 +3555,7 @@ void next_near_relay_manager_update( next_near_relay_manager_t * manager, int nu
                 new_relay_ping_history[index] = manager->relay_ping_history[i];
                 const int slot = manager->relay_ping_history[i] - manager->ping_history_array;
                 next_assert( slot >= 0 );
-                next_assert( slot < NEXT_MAX_NEAR_RELAYS );
+                next_assert( slot < NEXT_MAX_RELAYS );
                 history_slot_taken[slot] = true;
                 index++;
                 break;
@@ -3518,17 +3563,17 @@ void next_near_relay_manager_update( next_near_relay_manager_t * manager, int nu
         }
     }
 
-    // now copy all near relays not found in the current near relay list
+    // now copy all near relays not found in the current relay list
 
-    for ( int i = 0; i < num_near_relays; ++i )
+    for ( int i = 0; i < num_relays; ++i )
     {
         if ( !found[i] )
         {
-            new_relay_ids[index] = near_relay_ids[i];
+            new_relay_ids[index] = relay_ids[i];
             new_relay_last_ping_time[index] = -1000.0;
-            new_relay_addresses[index] = near_relay_addresses[i];
+            new_relay_addresses[index] = relay_addresses[i];
             new_relay_ping_history[index] = NULL;
-            for ( int j = 0; j < NEXT_MAX_NEAR_RELAYS; ++j )
+            for ( int j = 0; j < NEXT_MAX_RELAYS; ++j )
             {
                 if ( !history_slot_taken[j] )
                 {
@@ -3555,25 +3600,25 @@ void next_near_relay_manager_update( next_near_relay_manager_t * manager, int nu
 
     // make sure everything is correct
 
-    next_assert( num_near_relays == index );
+    next_assert( num_relays == index );
 
     int num_found = 0;
-    for ( int i = 0; i < num_near_relays; ++i )
+    for ( int i = 0; i < num_relays; ++i )
     {
         for ( int j = 0; j < manager->num_relays; ++j )
         {
-            if ( near_relay_ids[i] == manager->relay_ids[j] && next_address_equal( &near_relay_addresses[i], &manager->relay_addresses[j] ) == 1 )
+            if ( relay_ids[i] == manager->relay_ids[j] && next_address_equal( &relay_addresses[i], &manager->relay_addresses[j] ) == 1 )
             {
                 num_found++;
                 break;
             }
         }
     }
-    next_assert( num_found == num_near_relays );
+    next_assert( num_found == num_relays );
 
-    for ( int i = 0; i < num_near_relays; ++i )
+    for ( int i = 0; i < num_relays; ++i )
     {
-        for ( int j = 0; j < num_near_relays; ++j )
+        for ( int j = 0; j < num_relays; ++j )
         {
             if ( i == j )
                 continue;
@@ -3584,7 +3629,7 @@ void next_near_relay_manager_update( next_near_relay_manager_t * manager, int nu
 #endif // #ifndef DEBUG
 }
 
-void next_near_relay_manager_send_pings( next_near_relay_manager_t * manager, next_platform_socket_t * socket, uint64_t session_id )
+void next_relay_manager_send_pings( next_relay_manager_t * manager, next_platform_socket_t * socket, uint64_t session_id )
 {
     next_assert( manager );
     next_assert( socket );
@@ -3595,7 +3640,7 @@ void next_near_relay_manager_send_pings( next_near_relay_manager_t * manager, ne
 
     for ( int i = 0; i < manager->num_relays; ++i )
     {
-        if ( manager->relay_last_ping_time[i] + NEXT_NEAR_RELAY_PING_TIME <= current_time )
+        if ( manager->relay_last_ping_time[i] + NEXT_RELAY_PING_TIME <= current_time )
         {
             uint64_t ping_sequence = next_ping_history_ping_sent( manager->relay_ping_history[i], next_time() );
 
@@ -3615,7 +3660,7 @@ void next_near_relay_manager_send_pings( next_near_relay_manager_t * manager, ne
     }
 }
 
-void next_near_relay_manager_process_pong( next_near_relay_manager_t * manager, const next_address_t * from, uint64_t sequence )
+bool next_relay_manager_process_pong( next_relay_manager_t * manager, const next_address_t * from, uint64_t sequence )
 {
     next_assert( manager );
     next_assert( from );
@@ -3625,34 +3670,36 @@ void next_near_relay_manager_process_pong( next_near_relay_manager_t * manager, 
         if ( next_address_equal( from, &manager->relay_addresses[i] ) )
         {
             next_ping_history_pong_received( manager->relay_ping_history[i], sequence, next_time() );
-            return;
+            return true;
         }
     }
+
+    return false;
 }
 
-void next_near_relay_manager_get_stats( next_near_relay_manager_t * manager, next_near_relay_stats_t * stats )
+void next_relay_manager_get_stats( next_relay_manager_t * manager, next_relay_stats_t * stats )
 {
     next_assert( manager );
     next_assert( stats );
 
     double current_time = next_time();
     
-    stats->num_near_relays = manager->num_relays;
+    stats->num_relays = manager->num_relays;
     
-    for ( int i = 0; i < stats->num_near_relays; ++i )
+    for ( int i = 0; i < stats->num_relays; ++i )
     {        
         next_route_stats_t route_stats;
         next_route_stats_from_ping_history( manager->relay_ping_history[i], current_time - NEXT_CLIENT_STATS_WINDOW, current_time, &route_stats, NEXT_PING_SAFETY );
-        stats->near_relay_ids[i] = manager->relay_ids[i];
-        stats->near_relay_rtt[i] = route_stats.rtt;
-        stats->near_relay_jitter[i] = route_stats.jitter;
-        stats->near_relay_packet_loss[i] = route_stats.packet_loss;
+        stats->relay_ids[i] = manager->relay_ids[i];
+        stats->relay_rtt[i] = route_stats.rtt;
+        stats->relay_jitter[i] = route_stats.jitter;
+        stats->relay_packet_loss[i] = route_stats.packet_loss;
     }
 }
 
-void next_near_relay_manager_destroy( next_near_relay_manager_t * manager )
+void next_relay_manager_destroy( next_relay_manager_t * manager )
 {
-    next_free( manager );
+    next_free( manager->context, manager );
 }
 
 // ---------------------------------------------------------------
@@ -4088,6 +4135,8 @@ int next_read_header( int direction, uint8_t * type, uint64_t * sequence, uint64
 
 struct next_route_manager_t
 {
+    void * context;
+
     uint64_t send_sequence;
     uint64_t fallback_to_direct_sequence;
 
@@ -4127,12 +4176,13 @@ struct next_route_manager_t
     bool fallback_to_direct;
 };
 
-next_route_manager_t * next_route_manager_create()
+next_route_manager_t * next_route_manager_create( void * context )
 {
-    next_route_manager_t * route_manager = (next_route_manager_t*) next_malloc( sizeof(next_route_manager_t) );
+    next_route_manager_t * route_manager = (next_route_manager_t*) next_malloc( context, sizeof(next_route_manager_t) );
     if ( !route_manager ) 
         return NULL;
     memset( route_manager, 0, sizeof(next_route_manager_t) );
+    route_manager->context = context;
     return route_manager;
 }
 
@@ -4627,7 +4677,7 @@ void next_route_manager_process_continue_response_packet( next_route_manager_t *
 void next_route_manager_destroy( next_route_manager_t * route_manager )
 {
     next_assert( route_manager );
-    next_free( route_manager );
+    next_free( route_manager->context, route_manager );
 }
 
 // ---------------------------------------------------------------
@@ -4695,6 +4745,7 @@ struct next_client_notify_stats_updated_t : public next_client_notify_t
 
 struct next_client_internal_t
 {
+    void * context;
     next_queue_t * command_queue;
     next_queue_t * notify_queue;
     next_platform_socket_t * socket;
@@ -4704,6 +4755,7 @@ struct next_client_internal_t
     bool session_open;
     bool upgraded;
     bool fallback_to_direct;
+    uint8_t open_session_sequence;
     uint64_t fallback_to_direct_sequence;
     uint64_t upgrade_sequence;
     uint64_t session_id;
@@ -4714,8 +4766,10 @@ struct next_client_internal_t
     double last_stats_update_time;
     double last_stats_report_time;
     uint64_t route_update_sequence;
-    next_near_relay_stats_t near_relay_stats;
-    next_near_relay_manager_t * near_relay_manager;
+    next_relay_stats_t near_relay_stats;
+    next_relay_stats_t far_relay_stats;
+    next_relay_manager_t * near_relay_manager;
+    next_relay_manager_t * far_relay_manager;
     next_route_manager_t * route_manager;
     next_platform_mutex_t * route_manager_mutex;
     uint8_t customer_public_key[crypto_sign_PUBLICKEYBYTES];
@@ -4740,9 +4794,13 @@ struct next_client_internal_t
 
 void next_client_internal_destroy( next_client_internal_t * client );
 
-next_client_internal_t * next_client_internal_create( const char * customer_public_key_base64 )
+next_client_internal_t * next_client_internal_create( void * context, const char * customer_public_key_base64 )
 {
-    next_client_internal_t * client = (next_client_internal_t*) next_malloc( sizeof(next_client_internal_t) );
+    #if 1
+    next_printf( NEXT_LOG_LEVEL_INFO, "client sdk version is %s", NEXT_VERSION_FULL );
+    #endif // #if 1
+
+    next_client_internal_t * client = (next_client_internal_t*) next_malloc( context, sizeof(next_client_internal_t) );
     if ( !client ) 
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "could not create internal client" );
@@ -4750,6 +4808,8 @@ next_client_internal_t * next_client_internal_create( const char * customer_publ
     }
 
     memset( client, 0, sizeof( next_client_internal_t) );
+
+    client->context = context;
  
     const char * customer_public_key_override = next_platform_getenv( "NEXT_CUSTOMER_PUBLIC_KEY" );
     if ( customer_public_key_override )
@@ -4767,7 +4827,7 @@ next_client_internal_t * next_client_internal_create( const char * customer_publ
         next_printf( NEXT_LOG_LEVEL_DEBUG, "client customer public key is invalid: \"%s\"", customer_public_key_base64 );
     }
 
-    client->command_queue = next_queue_create( NEXT_COMMAND_QUEUE_LENGTH );
+    client->command_queue = next_queue_create( context, NEXT_COMMAND_QUEUE_LENGTH );
     if ( !client->command_queue )
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "client could not create client command queue" );
@@ -4775,7 +4835,7 @@ next_client_internal_t * next_client_internal_create( const char * customer_publ
         return NULL;
     }
     
-    client->notify_queue = next_queue_create( NEXT_NOTIFY_QUEUE_LENGTH );
+    client->notify_queue = next_queue_create( context, NEXT_NOTIFY_QUEUE_LENGTH );
     if ( !client->notify_queue )
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "client could not create client notify queue" );
@@ -4788,7 +4848,7 @@ next_client_internal_t * next_client_internal_create( const char * customer_publ
     bind_address.type = NEXT_ADDRESS_IPV4;
     bind_address.port = 0;
 
-    client->socket = next_platform_socket_create( &bind_address, NEXT_PLATFORM_SOCKET_BLOCKING, 0.1f, NEXT_SOCKET_SNDBUF_SIZE, NEXT_SOCKET_RCVBUF_SIZE );
+    client->socket = next_platform_socket_create( client->context, &bind_address, NEXT_PLATFORM_SOCKET_BLOCKING, 0.1f, NEXT_SOCKET_SNDBUF_SIZE, NEXT_SOCKET_RCVBUF_SIZE );
     if ( client->socket == NULL )
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "client could not create socket" );
@@ -4796,7 +4856,7 @@ next_client_internal_t * next_client_internal_create( const char * customer_publ
         return NULL;
     }
 
-    client->command_mutex = next_platform_mutex_create();
+    client->command_mutex = next_platform_mutex_create( client->context );
     if ( client->command_mutex == NULL )
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "client could not create command mutex" );
@@ -4804,7 +4864,7 @@ next_client_internal_t * next_client_internal_create( const char * customer_publ
         return NULL;
     }
 
-    client->notify_mutex = next_platform_mutex_create();
+    client->notify_mutex = next_platform_mutex_create( client->context );
     if ( client->notify_mutex == NULL )
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "client could not create notify mutex" );
@@ -4812,7 +4872,7 @@ next_client_internal_t * next_client_internal_create( const char * customer_publ
         return NULL;
     }
 
-    client->near_relay_manager = next_near_relay_manager_create();
+    client->near_relay_manager = next_relay_manager_create( context );
     if ( !client->near_relay_manager )
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "client could not create near relay manager" );
@@ -4820,7 +4880,15 @@ next_client_internal_t * next_client_internal_create( const char * customer_publ
         return NULL;
     }
 
-    client->route_manager = next_route_manager_create();
+    client->far_relay_manager = next_relay_manager_create( context );
+    if ( !client->far_relay_manager )
+    {
+        next_printf( NEXT_LOG_LEVEL_ERROR, "client could not create far relay manager" );
+        next_client_internal_destroy( client );
+        return NULL;
+    }
+
+    client->route_manager = next_route_manager_create( context );
     if ( !client->route_manager )
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "client could not create route manager" );
@@ -4828,7 +4896,7 @@ next_client_internal_t * next_client_internal_create( const char * customer_publ
         return NULL;
     }
 
-    client->route_manager_mutex = next_platform_mutex_create();
+    client->route_manager_mutex = next_platform_mutex_create( client->context );
     if ( !client->route_manager_mutex )
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "client could not create client route manager mutex" );
@@ -4836,7 +4904,7 @@ next_client_internal_t * next_client_internal_create( const char * customer_publ
         return NULL;
     }
 
-    client->bandwidth_mutex = next_platform_mutex_create();
+    client->bandwidth_mutex = next_platform_mutex_create( client->context );
     if ( client->bandwidth_mutex == NULL )
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "client could not create bandwidth mutex" );
@@ -4851,10 +4919,6 @@ next_client_internal_t * next_client_internal_create( const char * customer_publ
     next_replay_protection_reset( &client->replay_protection );
 
     next_replay_protection_reset( &client->session_replay_protection );
-
-    #if 1
-    next_printf( NEXT_LOG_LEVEL_INFO, "client sdk version is %s", NEXT_VERSION_FULL );
-    #endif // #if 1
 
     return client;
 }
@@ -4884,7 +4948,11 @@ void next_client_internal_destroy( next_client_internal_t * client )
     }
     if ( client->near_relay_manager )
     {
-        next_near_relay_manager_destroy( client->near_relay_manager );
+        next_relay_manager_destroy( client->near_relay_manager );
+    }
+    if ( client->far_relay_manager )
+    {
+        next_relay_manager_destroy( client->far_relay_manager );
     }
     if ( client->route_manager )
     {
@@ -4899,7 +4967,7 @@ void next_client_internal_destroy( next_client_internal_t * client )
         next_platform_mutex_destroy( client->bandwidth_mutex );
     }
     memset( client, 0, sizeof(next_client_internal_t) );
-    next_free( client );
+    next_free( client->context, client );
 }
 
 int next_client_internal_send_packet_to_server( next_client_internal_t * client, uint8_t packet_id, void * packet_object )
@@ -4977,6 +5045,7 @@ int next_client_internal_process_packet_from_server( next_client_internal_t * cl
             }
 
             NextUpgradeResponsePacket response;
+            response.client_open_session_sequence = client->open_session_sequence;
             memcpy( response.client_kx_public_key, client->client_kx_public_key, crypto_kx_PUBLICKEYBYTES );
             memcpy( response.client_route_public_key, client->client_route_public_key, crypto_box_PUBLICKEYBYTES );
             memcpy( response.upgrade_token, packet.upgrade_token, NEXT_UPGRADE_TOKEN_BYTES );
@@ -5042,7 +5111,7 @@ int next_client_internal_process_packet_from_server( next_client_internal_t * cl
             memcpy( client->client_send_key, client_send_key, crypto_kx_SESSIONKEYBYTES );
             memcpy( client->client_receive_key, client_receive_key, crypto_kx_SESSIONKEYBYTES );
 
-            next_client_notify_upgraded_t * notify = (next_client_notify_upgraded_t*) next_malloc( sizeof(next_client_notify_upgraded_t) );
+            next_client_notify_upgraded_t * notify = (next_client_notify_upgraded_t*) next_malloc( client->context, sizeof(next_client_notify_upgraded_t) );
             next_assert( notify );
             notify->type = NEXT_CLIENT_NOTIFY_UPGRADED;
             notify->session_id = client->session_id;
@@ -5107,7 +5176,9 @@ int next_client_internal_process_packet_from_server( next_client_internal_t * cl
             {
                 next_printf( NEXT_LOG_LEVEL_DEBUG, "client received route update" );
 
-                next_near_relay_manager_update( client->near_relay_manager, packet.num_relays, packet.relay_ids, packet.relay_addresses );
+                next_relay_manager_update( client->near_relay_manager, packet.num_near_relays, packet.near_relay_ids, packet.near_relay_addresses );
+
+                next_relay_manager_update( client->far_relay_manager, packet.num_far_relays, packet.far_relay_ids, packet.far_relay_addresses );
 
                 next_platform_mutex_acquire( client->route_manager_mutex );
                 next_route_manager_update( client->route_manager, packet.fallback_to_direct_sequence, packet.update_type, packet.num_tokens, packet.tokens, next_router_public_key, client->client_route_private_key );
@@ -5167,7 +5238,10 @@ int next_client_internal_process_network_next_packet( next_client_internal_t * c
                 return NEXT_ERROR;
             }
 
-            next_near_relay_manager_process_pong( client->near_relay_manager, from, packet.ping_sequence );
+            if ( !next_relay_manager_process_pong( client->near_relay_manager, from, packet.ping_sequence ) )
+            {
+                next_relay_manager_process_pong( client->far_relay_manager, from, packet.ping_sequence );
+            }
         }
         break;        
 
@@ -5224,13 +5298,13 @@ int next_client_internal_process_network_next_packet( next_client_internal_t * c
 
             if ( next_replay_protection_already_received( &client->session_replay_protection, payload_sequence ) )
             {
-                next_printf( NEXT_LOG_LEVEL_WARN, "client already received server to client packet %" PRId64, payload_sequence );
+                next_printf( NEXT_LOG_LEVEL_WARN, "client already received server to client packet %" PRIu64, payload_sequence );
                 return NEXT_ERROR;
             }
 
             next_replay_protection_advance_sequence( &client->session_replay_protection, payload_sequence );
 
-            next_client_notify_packet_received_t * notify = (next_client_notify_packet_received_t*) next_malloc( sizeof( next_client_notify_packet_received_t ) );
+            next_client_notify_packet_received_t * notify = (next_client_notify_packet_received_t*) next_malloc( client->context, sizeof( next_client_notify_packet_received_t ) );
             notify->type = NEXT_CLIENT_NOTIFY_PACKET_RECEIVED;
             notify->packet_bytes = payload_bytes;
             memcpy( notify->packet_data, payload_data, payload_bytes );
@@ -5261,7 +5335,7 @@ int next_client_internal_process_network_next_packet( next_client_internal_t * c
 
             if ( next_replay_protection_already_received( &client->session_replay_protection, payload_sequence ) )
             {
-                next_printf( NEXT_LOG_LEVEL_WARN, "client already received pong packet %" PRId64, payload_sequence );
+                next_printf( NEXT_LOG_LEVEL_WARN, "client already received pong packet %" PRIu64, payload_sequence );
                 return NEXT_ERROR;
             }
 
@@ -5295,7 +5369,7 @@ void next_client_internal_block_and_receive_packet( next_client_internal_t * cli
 
     if ( packet_data[0] == 0 && packet_bytes <= NEXT_MTU + 1 && from_server_address )
     {
-        next_client_notify_packet_received_t * notify = (next_client_notify_packet_received_t*) next_malloc( sizeof( next_client_notify_packet_received_t ) );
+        next_client_notify_packet_received_t * notify = (next_client_notify_packet_received_t*) next_malloc( client->context, sizeof( next_client_notify_packet_received_t ) );
         notify->type = NEXT_CLIENT_NOTIFY_PACKET_RECEIVED;
         notify->packet_bytes = packet_bytes - 1;
         memcpy( notify->packet_data, packet_data + 1, packet_bytes - 1 );
@@ -5304,20 +5378,26 @@ void next_client_internal_block_and_receive_packet( next_client_internal_t * cli
             next_queue_push( client->notify_queue, notify );            
         }
     }
-    else if ( packet_data[0] == 255 && packet_bytes <= NEXT_MTU + 9 && from_server_address )
+    else if ( packet_data[0] == 255 && packet_bytes <= NEXT_MTU + 10 && from_server_address )
     {
         const uint8_t * p = packet_data + 1;
+        uint8_t packet_session_sequence = next_read_uint8( &p );
+        if ( packet_session_sequence != client->open_session_sequence )
+        {
+            next_printf( NEXT_LOG_LEVEL_DEBUG, "client ignored direct packet. session mismatch" );
+            return;
+        }
         uint64_t packet_sequence = next_read_uint64( &p );
         if ( next_replay_protection_already_received( &client->session_replay_protection, packet_sequence ) )
         {
-            next_printf( NEXT_LOG_LEVEL_WARN, "client already received direct packet %" PRId64, packet_sequence );
+            next_printf( NEXT_LOG_LEVEL_WARN, "client already received direct packet %" PRIu64 " (%" PRIu64 ")", packet_sequence, client->session_replay_protection.most_recent_sequence );
             return;
         }
         next_replay_protection_advance_sequence( &client->session_replay_protection, packet_sequence );
-        next_client_notify_packet_received_t * notify = (next_client_notify_packet_received_t*) next_malloc( sizeof( next_client_notify_packet_received_t ) );
+        next_client_notify_packet_received_t * notify = (next_client_notify_packet_received_t*) next_malloc( client->context, sizeof( next_client_notify_packet_received_t ) );
         notify->type = NEXT_CLIENT_NOTIFY_PACKET_RECEIVED;
-        notify->packet_bytes = packet_bytes - 9;
-        memcpy( notify->packet_data, packet_data + 9, packet_bytes - 9 );
+        notify->packet_bytes = packet_bytes - 10;
+        memcpy( notify->packet_data, packet_data + 10, packet_bytes - 10 );
         {
             next_mutex_guard( client->notify_mutex );
             next_queue_push( client->notify_queue, notify );            
@@ -5360,6 +5440,7 @@ bool next_client_internal_pump_commands( next_client_internal_t * client )
                 next_client_command_open_session_t * open_session_command = (next_client_command_open_session_t*) entry;
                 client->server_address = open_session_command->server_address;
                 client->session_open = true;
+                client->open_session_sequence++;
                 client->last_direct_ping_time = next_time();
                 client->last_stats_update_time = next_time();
                 client->last_stats_report_time = next_time();
@@ -5374,26 +5455,48 @@ bool next_client_internal_pump_commands( next_client_internal_t * client )
             {
                 if ( !client->session_open )
                     break;
+
                 char buffer[NEXT_MAX_ADDRESS_STRING_LENGTH];
                 next_printf( NEXT_LOG_LEVEL_INFO, "client closed session to %s", next_address_to_string( &client->server_address, buffer ) );
+
                 memset( &client->server_address, 0, sizeof(next_address_t) );
                 client->session_open = false;
                 client->upgraded = false;
                 client->fallback_to_direct = false;
+                client->fallback_to_direct_sequence = 0;
                 client->upgrade_sequence = 0;
                 client->session_id = 0;
                 client->send_sequence = 0;
+                client->last_next_ping_time = 0.0;
+                client->last_direct_ping_time = 0.0;
+                client->last_direct_pong_time = 0.0;
+                client->last_stats_update_time = 0.0;
+                client->last_stats_report_time = 0.0;
+                client->route_update_sequence = 0;
+                memset( &client->near_relay_stats, 0, sizeof(next_relay_stats_t ) );
+                memset( &client->far_relay_stats, 0, sizeof(next_relay_stats_t ) );
+                next_relay_manager_reset( client->near_relay_manager );
+                next_relay_manager_reset( client->far_relay_manager );
+                memset( client->client_kx_public_key, 0, crypto_kx_PUBLICKEYBYTES );
+                memset( client->client_kx_private_key, 0, crypto_kx_SECRETKEYBYTES );
+                memset( client->client_send_key, 0, crypto_kx_SESSIONKEYBYTES );
+                memset( client->client_receive_key, 0, crypto_kx_SESSIONKEYBYTES );
+                memset( client->client_route_public_key, 0, crypto_box_PUBLICKEYBYTES );
+                memset( client->client_route_private_key, 0, crypto_box_SECRETKEYBYTES );
                 next_ping_history_clear( &client->next_ping_history );
                 next_ping_history_clear( &client->direct_ping_history );
                 memset( &client->client_stats, 0, sizeof(next_client_stats_t) );
-                memset( client->client_send_key, 0, crypto_kx_SESSIONKEYBYTES );
-                memset( client->client_receive_key, 0, crypto_kx_SESSIONKEYBYTES );
-                memset( client->client_kx_public_key, 0, crypto_kx_PUBLICKEYBYTES );
-                memset( client->client_kx_private_key, 0, crypto_kx_SECRETKEYBYTES );
-                memset( client->client_route_public_key, 0, crypto_box_PUBLICKEYBYTES );
-                memset( client->client_route_private_key, 0, crypto_box_SECRETKEYBYTES );
                 next_replay_protection_reset( &client->replay_protection );
                 next_replay_protection_reset( &client->session_replay_protection );
+
+                next_platform_mutex_acquire( client->bandwidth_mutex );
+                client->bandwidth_over_budget = 0;
+                client->bandwidth_usage_kbps_up = 0;
+                client->bandwidth_usage_kbps_down = 0;
+                client->bandwidth_envelope_kbps_up = 0;
+                client->bandwidth_envelope_kbps_down = 0;
+                next_platform_mutex_release( client->bandwidth_mutex );
+
                 next_route_manager_direct_route( client->route_manager, false, false );
             }
             break;
@@ -5407,7 +5510,7 @@ bool next_client_internal_pump_commands( next_client_internal_t * client )
             default: break;                
         }
 
-        next_free( command );
+        next_free( client->context, command );
     }
 
     return quit;
@@ -5460,9 +5563,11 @@ void next_client_internal_update_stats( next_client_internal_t * client )
         client->client_stats.direct_jitter = direct_route_stats.jitter;    
         client->client_stats.direct_packet_loss = direct_route_stats.packet_loss;
 
-        next_near_relay_manager_get_stats( client->near_relay_manager, &client->near_relay_stats );
+        next_relay_manager_get_stats( client->near_relay_manager, &client->near_relay_stats );
 
-        next_client_notify_stats_updated_t * notify = (next_client_notify_stats_updated_t*) next_malloc( sizeof( next_client_notify_stats_updated_t ) );
+        next_relay_manager_get_stats( client->far_relay_manager, &client->far_relay_stats );
+
+        next_client_notify_stats_updated_t * notify = (next_client_notify_stats_updated_t*) next_malloc( client->context, sizeof( next_client_notify_stats_updated_t ) );
         notify->type = NEXT_CLIENT_NOTIFY_STATS_UPDATED;
         notify->stats = client->client_stats;
         notify->fallback_to_direct = fallback_to_direct;
@@ -5502,13 +5607,22 @@ void next_client_internal_update_stats( next_client_internal_t * client )
         packet.direct_jitter = client->client_stats.direct_jitter;
         packet.direct_packet_loss = client->client_stats.direct_packet_loss;
 
-        packet.num_near_relays = client->near_relay_stats.num_near_relays;
+        packet.num_near_relays = client->near_relay_stats.num_relays;
         for ( int i = 0; i < packet.num_near_relays; ++i )
         {
-            packet.near_relay_ids[i] = client->near_relay_stats.near_relay_ids[i];
-            packet.near_relay_rtt[i] = client->near_relay_stats.near_relay_rtt[i];
-            packet.near_relay_jitter[i] = client->near_relay_stats.near_relay_jitter[i];
-            packet.near_relay_packet_loss[i] = client->near_relay_stats.near_relay_packet_loss[i];
+            packet.near_relay_ids[i] = client->near_relay_stats.relay_ids[i];
+            packet.near_relay_rtt[i] = client->near_relay_stats.relay_rtt[i];
+            packet.near_relay_jitter[i] = client->near_relay_stats.relay_jitter[i];
+            packet.near_relay_packet_loss[i] = client->near_relay_stats.relay_packet_loss[i];
+        }
+
+        packet.num_far_relays = client->far_relay_stats.num_relays;
+        for ( int i = 0; i < packet.num_far_relays; ++i )
+        {
+            packet.far_relay_ids[i] = client->far_relay_stats.relay_ids[i];
+            packet.far_relay_rtt[i] = client->far_relay_stats.relay_rtt[i];
+            packet.far_relay_jitter[i] = client->far_relay_stats.relay_jitter[i];
+            packet.far_relay_packet_loss[i] = client->far_relay_stats.relay_packet_loss[i];
         }
 
         if ( next_client_internal_send_packet_to_server( client, NEXT_CLIENT_STATS_PACKET, &packet ) != NEXT_OK )
@@ -5547,7 +5661,7 @@ void next_client_internal_update_direct_pings( next_client_internal_t * client )
     if ( client->last_direct_pong_time + NEXT_SESSION_TIMEOUT < current_time )
     {
         next_printf( NEXT_LOG_LEVEL_INFO, "client downgraded from session %" PRIx64, client->session_id );
-        next_client_notify_downgraded_t * notify = (next_client_notify_downgraded_t*) next_malloc( sizeof(next_client_notify_downgraded_t) );
+        next_client_notify_downgraded_t * notify = (next_client_notify_downgraded_t*) next_malloc( client->context, sizeof(next_client_notify_downgraded_t) );
         next_assert( notify );
         notify->type = NEXT_CLIENT_NOTIFY_DOWNGRADED;
         notify->session_id = client->session_id;
@@ -5616,7 +5730,9 @@ void next_client_internal_send_pings_to_near_relays( next_client_internal_t * cl
     if ( !client->upgraded )
         return;
 
-    next_near_relay_manager_send_pings( client->near_relay_manager, client->socket, client->session_id );
+    next_relay_manager_send_pings( client->near_relay_manager, client->socket, client->session_id );
+
+    next_relay_manager_send_pings( client->far_relay_manager, client->socket, client->session_id );
 }
 
 void next_client_internal_update_route_manager( next_client_internal_t * client )
@@ -5686,15 +5802,16 @@ static next_platform_thread_return_t NEXT_PLATFORM_THREAD_FUNC next_client_inter
 
 struct next_client_t
 {
+    void * context;
     bool session_open;
     bool upgraded;
     bool multipath;
     bool fallback_to_direct;
+    uint8_t open_session_sequence;
     uint64_t session_id;
     next_address_t server_address;
     next_client_internal_t * internal;
     next_platform_thread_t * thread;
-    void * callback_context;
     void (*packet_received_callback)( next_client_t * client, void * context, const uint8_t * packet_data, int packet_bytes );
     next_client_stats_t stats;
     next_bandwidth_limiter_t send_bandwidth;
@@ -5703,24 +5820,26 @@ struct next_client_t
 
 void next_client_destroy( next_client_t * client );
 
-next_client_t * next_client_create( const char * customer_public_key_base64, void * callback_context, void (*packet_received_callback)( next_client_t * client, void * context, const uint8_t * packet_data, int packet_bytes ) )
+next_client_t * next_client_create( void * context, const char * customer_public_key_base64, void (*packet_received_callback)( next_client_t * client, void * context, const uint8_t * packet_data, int packet_bytes ) )
 {
     next_assert( packet_received_callback );
 
-    next_client_t * client = (next_client_t*) next_malloc( sizeof(next_client_t) );
+    next_client_t * client = (next_client_t*) next_malloc( context, sizeof(next_client_t) );
     if ( !client ) 
         return NULL;
 
     memset( client, 0, sizeof( next_client_t) );
 
-    client->internal = next_client_internal_create( customer_public_key_base64 );
+    client->context = context;
+
+    client->internal = next_client_internal_create( client->context, customer_public_key_base64 );
     if ( !client->internal )
     {
         next_client_destroy( client );
         return NULL;
     }
 
-    client->thread = next_platform_thread_create( next_client_internal_thread_function, client->internal );
+    client->thread = next_platform_thread_create( client->context, next_client_internal_thread_function, client->internal );
     next_assert( client->thread );
     if ( !client->thread )
     {
@@ -5729,7 +5848,7 @@ next_client_t * next_client_create( const char * customer_public_key_base64, voi
         return NULL;
     }
 
-    client->callback_context = callback_context;
+    client->context = context;
     client->packet_received_callback = packet_received_callback;
 
     next_bandwidth_limiter_reset( &client->send_bandwidth );
@@ -5744,7 +5863,7 @@ void next_client_destroy( next_client_t * client )
 
     if ( client->thread )
     {
-        next_client_command_destroy_t * command = (next_client_command_destroy_t*) next_malloc( sizeof( next_client_command_destroy_t ) );
+        next_client_command_destroy_t * command = (next_client_command_destroy_t*) next_malloc( client->context, sizeof( next_client_command_destroy_t ) );
         if ( !command )
         {
             next_printf( NEXT_LOG_LEVEL_ERROR, "client destroy failed. could not create destroy command" );
@@ -5767,7 +5886,7 @@ void next_client_destroy( next_client_t * client )
 
     memset( client, 0, sizeof(next_client_t) );
 
-    next_free( client );
+    next_free( client->context, client );
 }
 
 void next_client_open_session( next_client_t * client, const char * server_address_string )
@@ -5777,6 +5896,8 @@ void next_client_open_session( next_client_t * client, const char * server_addre
     next_assert( client->internal->command_mutex );
     next_assert( client->internal->command_queue );
 
+    next_client_close_session( client );
+
     next_address_t server_address;
     if ( next_address_parse( &server_address, server_address_string ) != NEXT_OK )
     {
@@ -5784,7 +5905,7 @@ void next_client_open_session( next_client_t * client, const char * server_addre
         return;
     }
     
-    next_client_command_open_session_t * command = (next_client_command_open_session_t*) next_malloc( sizeof( next_client_command_open_session_t ) );
+    next_client_command_open_session_t * command = (next_client_command_open_session_t*) next_malloc( client->context, sizeof( next_client_command_open_session_t ) );
     if ( !command )
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "client open session failed. could not create open session command" );
@@ -5800,9 +5921,8 @@ void next_client_open_session( next_client_t * client, const char * server_addre
     }
 
     client->session_open = true;
-    client->upgraded = false;
-    client->fallback_to_direct = false;
     client->server_address = server_address;
+    client->open_session_sequence++;
 }
 
 void next_client_close_session( next_client_t * client )
@@ -5812,7 +5932,7 @@ void next_client_close_session( next_client_t * client )
     next_assert( client->internal->command_mutex );
     next_assert( client->internal->command_queue );
 
-    next_client_command_close_session_t * command = (next_client_command_close_session_t*) next_malloc( sizeof( next_client_command_close_session_t ) );
+    next_client_command_close_session_t * command = (next_client_command_close_session_t*) next_malloc( client->context, sizeof( next_client_command_close_session_t ) );
     if ( !command )
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "client close session failed. could not create close session command" );
@@ -5820,7 +5940,6 @@ void next_client_close_session( next_client_t * client )
     }
     
     command->type = NEXT_CLIENT_COMMAND_CLOSE_SESSION;
-
     {
         next_mutex_guard( client->internal->command_mutex );    
         next_queue_push( client->internal->command_queue, command );
@@ -5830,8 +5949,11 @@ void next_client_close_session( next_client_t * client )
     client->upgraded = false;
     client->multipath = false;
     client->fallback_to_direct = false;
-
+    client->session_id = 0;
+    memset( &client->stats, 0, sizeof(next_client_stats_t ) );
     memset( &client->server_address, 0, sizeof(next_address_t) );
+    next_bandwidth_limiter_reset( &client->send_bandwidth );
+    next_bandwidth_limiter_reset( &client->receive_bandwidth );
 }
 
 void next_client_update( next_client_t * client )
@@ -5855,7 +5977,7 @@ void next_client_update( next_client_t * client )
             {
                 next_client_notify_packet_received_t * packet_received = (next_client_notify_packet_received_t*) notify;
 
-                client->packet_received_callback( client, client->callback_context, packet_received->packet_data, packet_received->packet_bytes );
+                client->packet_received_callback( client, client->context, packet_received->packet_data, packet_received->packet_bytes );
 
                 next_platform_mutex_acquire( client->internal->bandwidth_mutex );
                 const int envelope_kbps_down = client->internal->bandwidth_envelope_kbps_down;
@@ -5903,7 +6025,7 @@ void next_client_update( next_client_t * client )
             default: break;
         }
 
-        next_free( entry );
+        next_free( client->context, entry );
     }
 }
 
@@ -5988,14 +6110,15 @@ void next_client_send_packet( next_client_t * client, const uint8_t * packet_dat
         
         if ( send_direct )
         {
-            // [255][sequence](payload) style packets direct to server
+            // [255][open session sequence][sequence](payload) style packets direct to server
 
-            uint8_t buffer[9+NEXT_MTU];
+            uint8_t buffer[10+NEXT_MTU];
             uint8_t * p = buffer;
             next_write_uint8( &p, 255 );
+            next_write_uint8( &p, client->open_session_sequence );
             next_write_uint64( &p, send_sequence );
-            memcpy( buffer+9, packet_data, packet_bytes );
-            next_platform_socket_send_packet( client->internal->socket, &client->server_address, buffer, packet_bytes + 9 );
+            memcpy( buffer+10, packet_data, packet_bytes );
+            next_platform_socket_send_packet( client->internal->socket, &client->server_address, buffer, packet_bytes + 10 );
         }
     }
     else
@@ -6268,6 +6391,7 @@ struct next_pending_session_entry_t
 
 struct next_pending_session_manager_t
 {
+    void * context;
     int size;
     int max_entry_index;
     next_address_t * addresses;
@@ -6276,16 +6400,17 @@ struct next_pending_session_manager_t
 
 void next_pending_session_manager_destroy( next_pending_session_manager_t * pending_session_manager );
 
-next_pending_session_manager_t * next_pending_session_manager_create( int initial_size )
+next_pending_session_manager_t * next_pending_session_manager_create( void * context, int initial_size )
 {
-    next_pending_session_manager_t * pending_session_manager = (next_pending_session_manager_t*) next_malloc( sizeof(next_pending_session_manager_t) );
+    next_pending_session_manager_t * pending_session_manager = (next_pending_session_manager_t*) next_malloc( context, sizeof(next_pending_session_manager_t) );
     next_assert( pending_session_manager );
     if ( !pending_session_manager )
         return NULL;
     memset( pending_session_manager, 0, sizeof(next_pending_session_manager_t) );
+    pending_session_manager->context = context;
     pending_session_manager->size = initial_size;
-    pending_session_manager->addresses = (next_address_t*) next_malloc( initial_size * sizeof(next_address_t) );
-    pending_session_manager->entries = (next_pending_session_entry_t*) next_malloc( initial_size * sizeof(next_pending_session_entry_t) );
+    pending_session_manager->addresses = (next_address_t*) next_malloc( context, initial_size * sizeof(next_address_t) );
+    pending_session_manager->entries = (next_pending_session_entry_t*) next_malloc( context, initial_size * sizeof(next_pending_session_entry_t) );
     next_assert( pending_session_manager->addresses );
     next_assert( pending_session_manager->entries );
     if ( pending_session_manager->addresses == NULL || pending_session_manager->entries == NULL )
@@ -6301,24 +6426,24 @@ next_pending_session_manager_t * next_pending_session_manager_create( int initia
 void next_pending_session_manager_destroy( next_pending_session_manager_t * pending_session_manager )
 {
     next_assert( pending_session_manager );
-    next_free( pending_session_manager->addresses );
-    next_free( pending_session_manager->entries );
+    next_free( pending_session_manager->context, pending_session_manager->addresses );
+    next_free( pending_session_manager->context, pending_session_manager->entries );
     memset( pending_session_manager, 0, sizeof(next_pending_session_manager_t) );
-    next_free( pending_session_manager );
+    next_free( pending_session_manager->context, pending_session_manager );
 }
 
 bool next_pending_session_manager_expand( next_pending_session_manager_t * pending_session_manager )
 {
     next_assert( pending_session_manager );
     int new_size = pending_session_manager->size * 2;
-    next_address_t * new_addresses = (next_address_t*) next_malloc( new_size * sizeof(next_address_t) );
-    next_pending_session_entry_t * new_entries = (next_pending_session_entry_t*) next_malloc( new_size * sizeof(next_pending_session_entry_t) );
+    next_address_t * new_addresses = (next_address_t*) next_malloc( pending_session_manager->context, new_size * sizeof(next_address_t) );
+    next_pending_session_entry_t * new_entries = (next_pending_session_entry_t*) next_malloc( pending_session_manager->context, new_size * sizeof(next_pending_session_entry_t) );
     next_assert( pending_session_manager->addresses );
     next_assert( pending_session_manager->entries );
     if ( pending_session_manager->addresses == NULL || pending_session_manager->entries == NULL )
     {
-        next_free( new_addresses );
-        next_free( new_entries );
+        next_free( pending_session_manager->context, new_addresses );
+        next_free( pending_session_manager->context, new_entries );
         return false;
     }
     memset( new_addresses, 0, new_size * sizeof(next_address_t) );
@@ -6334,8 +6459,8 @@ bool next_pending_session_manager_expand( next_pending_session_manager_t * pendi
             index++;            
         }
     }
-    next_free( pending_session_manager->addresses );
-    next_free( pending_session_manager->entries );
+    next_free( pending_session_manager->context, pending_session_manager->addresses );
+    next_free( pending_session_manager->context, pending_session_manager->entries );
     pending_session_manager->addresses = new_addresses;
     pending_session_manager->entries = new_entries;
     pending_session_manager->size = new_size;
@@ -6465,6 +6590,7 @@ struct next_proxy_session_entry_t
 
 struct next_proxy_session_manager_t
 {
+    void * context;
     int size;
     int max_entry_index;
     next_address_t * addresses;
@@ -6473,16 +6599,17 @@ struct next_proxy_session_manager_t
 
 void next_proxy_session_manager_destroy( next_proxy_session_manager_t * session_manager );
 
-next_proxy_session_manager_t * next_proxy_session_manager_create( int initial_size )
+next_proxy_session_manager_t * next_proxy_session_manager_create( void * context, int initial_size )
 {
-    next_proxy_session_manager_t * session_manager = (next_proxy_session_manager_t*) next_malloc( sizeof(next_proxy_session_manager_t) );
+    next_proxy_session_manager_t * session_manager = (next_proxy_session_manager_t*) next_malloc( context, sizeof(next_proxy_session_manager_t) );
     next_assert( session_manager );
     if ( !session_manager )
         return NULL;
     memset( session_manager, 0, sizeof(next_proxy_session_manager_t) );
+    session_manager->context = context;
     session_manager->size = initial_size;
-    session_manager->addresses = (next_address_t*) next_malloc( initial_size * sizeof(next_address_t) );
-    session_manager->entries = (next_proxy_session_entry_t*) next_malloc( initial_size * sizeof(next_proxy_session_entry_t) );
+    session_manager->addresses = (next_address_t*) next_malloc( context, initial_size * sizeof(next_address_t) );
+    session_manager->entries = (next_proxy_session_entry_t*) next_malloc( context, initial_size * sizeof(next_proxy_session_entry_t) );
     next_assert( session_manager->addresses );
     next_assert( session_manager->entries );
     if ( session_manager->addresses == NULL || session_manager->entries == NULL )
@@ -6498,24 +6625,24 @@ next_proxy_session_manager_t * next_proxy_session_manager_create( int initial_si
 void next_proxy_session_manager_destroy( next_proxy_session_manager_t * session_manager )
 {
     next_assert( session_manager );
-    next_free( session_manager->addresses );
-    next_free( session_manager->entries );
+    next_free( session_manager->context, session_manager->addresses );
+    next_free( session_manager->context, session_manager->entries );
     memset( session_manager, 0, sizeof(next_proxy_session_manager_t) );
-    next_free( session_manager );
+    next_free( session_manager->context, session_manager );
 }
 
 bool next_proxy_session_manager_expand( next_proxy_session_manager_t * session_manager )
 {
     next_assert( session_manager );
     int new_size = session_manager->size * 2;
-    next_address_t * new_addresses = (next_address_t*) next_malloc( new_size * sizeof(next_address_t) );
-    next_proxy_session_entry_t * new_entries = (next_proxy_session_entry_t*) next_malloc( new_size * sizeof(next_proxy_session_entry_t) );
+    next_address_t * new_addresses = (next_address_t*) next_malloc( session_manager->context, new_size * sizeof(next_address_t) );
+    next_proxy_session_entry_t * new_entries = (next_proxy_session_entry_t*) next_malloc( session_manager->context, new_size * sizeof(next_proxy_session_entry_t) );
     next_assert( session_manager->addresses );
     next_assert( session_manager->entries );
     if ( session_manager->addresses == NULL || session_manager->entries == NULL )
     {
-        next_free( new_addresses );
-        next_free( new_entries );
+        next_free( session_manager->context, new_addresses );
+        next_free( session_manager->context, new_entries );
         return false;
     }
     memset( new_addresses, 0, new_size * sizeof(next_address_t) );
@@ -6531,8 +6658,8 @@ bool next_proxy_session_manager_expand( next_proxy_session_manager_t * session_m
             index++;            
         }
     }
-    next_free( session_manager->addresses );
-    next_free( session_manager->entries );
+    next_free( session_manager->context, session_manager->addresses );
+    next_free( session_manager->context, session_manager->entries );
     session_manager->addresses = new_addresses;
     session_manager->entries = new_entries;
     session_manager->size = new_size;
@@ -6657,6 +6784,7 @@ struct next_session_entry_t
     uint64_t user_id;
     uint64_t platform_id_override;
     uint64_t tag;
+    uint8_t client_open_session_sequence;
 
     bool stats_fallback_to_direct;
     uint64_t stats_fallback_to_direct_sequence;
@@ -6672,10 +6800,15 @@ struct next_session_entry_t
     float stats_next_jitter;
     float stats_next_packet_loss;
     int stats_num_near_relays;
-    uint64_t stats_near_relay_ids[NEXT_MAX_NEAR_RELAYS];
-    float stats_near_relay_rtt[NEXT_MAX_NEAR_RELAYS];
-    float stats_near_relay_jitter[NEXT_MAX_NEAR_RELAYS];
-    float stats_near_relay_packet_loss[NEXT_MAX_NEAR_RELAYS];
+    uint64_t stats_near_relay_ids[NEXT_MAX_RELAYS];
+    float stats_near_relay_rtt[NEXT_MAX_RELAYS];
+    float stats_near_relay_jitter[NEXT_MAX_RELAYS];
+    float stats_near_relay_packet_loss[NEXT_MAX_RELAYS];
+    int stats_num_far_relays;
+    uint64_t stats_far_relay_ids[NEXT_MAX_RELAYS];
+    float stats_far_relay_rtt[NEXT_MAX_RELAYS];
+    float stats_far_relay_jitter[NEXT_MAX_RELAYS];
+    float stats_far_relay_packet_loss[NEXT_MAX_RELAYS];
     
     double next_session_update_time;
     double next_session_resend_time;
@@ -6691,8 +6824,11 @@ struct next_session_entry_t
     int update_num_tokens;
     uint8_t update_tokens[NEXT_MAX_TOKENS*NEXT_ENCRYPTED_ROUTE_TOKEN_BYTES];
     int update_num_near_relays;
-    uint64_t update_near_relay_ids[NEXT_MAX_NEAR_RELAYS];
-    next_address_t update_near_relay_addresses[NEXT_MAX_NEAR_RELAYS];
+    uint64_t update_near_relay_ids[NEXT_MAX_RELAYS];
+    next_address_t update_near_relay_addresses[NEXT_MAX_RELAYS];
+    int update_num_far_relays;
+    uint64_t update_far_relay_ids[NEXT_MAX_RELAYS];
+    next_address_t update_far_relay_addresses[NEXT_MAX_RELAYS];
     uint8_t update_packet_data[NEXT_MAX_PACKET_BYTES];
     int update_packet_bytes;
 
@@ -6741,6 +6877,7 @@ struct next_session_entry_t
 
 struct next_session_manager_t
 {
+    void * context;
     int size;
     int max_entry_index;
     uint64_t * session_ids;
@@ -6750,17 +6887,18 @@ struct next_session_manager_t
 
 void next_session_manager_destroy( next_session_manager_t * session_manager );
 
-next_session_manager_t * next_session_manager_create( int initial_size )
+next_session_manager_t * next_session_manager_create( void * context, int initial_size )
 {
-    next_session_manager_t * session_manager = (next_session_manager_t*) next_malloc( sizeof(next_session_manager_t) );
+    next_session_manager_t * session_manager = (next_session_manager_t*) next_malloc( context, sizeof(next_session_manager_t) );
     next_assert( session_manager );
     if ( !session_manager )
         return NULL;
     memset( session_manager, 0, sizeof(next_session_manager_t) );
+    session_manager->context = context;
     session_manager->size = initial_size;
-    session_manager->session_ids = (uint64_t*) next_malloc( initial_size * 8 );
-    session_manager->addresses = (next_address_t*) next_malloc( initial_size * sizeof(next_address_t) );
-    session_manager->entries = (next_session_entry_t*) next_malloc( initial_size * sizeof(next_session_entry_t) );
+    session_manager->session_ids = (uint64_t*) next_malloc( context, initial_size * 8 );
+    session_manager->addresses = (next_address_t*) next_malloc( context, initial_size * sizeof(next_address_t) );
+    session_manager->entries = (next_session_entry_t*) next_malloc( context, initial_size * sizeof(next_session_entry_t) );
     next_assert( session_manager->session_ids );
     next_assert( session_manager->addresses );
     next_assert( session_manager->entries );
@@ -6778,11 +6916,11 @@ next_session_manager_t * next_session_manager_create( int initial_size )
 void next_session_manager_destroy( next_session_manager_t * session_manager )
 {
     next_assert( session_manager );
-    next_free( session_manager->session_ids );
-    next_free( session_manager->addresses );
-    next_free( session_manager->entries );
+    next_free( session_manager->context, session_manager->session_ids );
+    next_free( session_manager->context, session_manager->addresses );
+    next_free( session_manager->context, session_manager->entries );
     memset( session_manager, 0, sizeof(next_session_manager_t) );
-    next_free( session_manager );
+    next_free( session_manager->context, session_manager );
 }
 
 bool next_session_manager_expand( next_session_manager_t * session_manager )
@@ -6791,9 +6929,9 @@ bool next_session_manager_expand( next_session_manager_t * session_manager )
 
     int new_size = session_manager->size * 2;
 
-    uint64_t * new_session_ids = (uint64_t*) next_malloc( new_size * 8 );
-    next_address_t * new_addresses = (next_address_t*) next_malloc( new_size * sizeof(next_address_t) );
-    next_session_entry_t * new_entries = (next_session_entry_t*) next_malloc( new_size * sizeof(next_session_entry_t) );
+    uint64_t * new_session_ids = (uint64_t*) next_malloc( session_manager->context, new_size * 8 );
+    next_address_t * new_addresses = (next_address_t*) next_malloc( session_manager->context, new_size * sizeof(next_address_t) );
+    next_session_entry_t * new_entries = (next_session_entry_t*) next_malloc( session_manager->context, new_size * sizeof(next_session_entry_t) );
 
     next_assert( session_manager->session_ids );
     next_assert( session_manager->addresses );
@@ -6801,9 +6939,9 @@ bool next_session_manager_expand( next_session_manager_t * session_manager )
 
     if ( session_manager->session_ids == NULL || session_manager->addresses == NULL || session_manager->entries == NULL )
     {
-        next_free( new_session_ids );
-        next_free( new_addresses );
-        next_free( new_entries );
+        next_free( session_manager->context, new_session_ids );
+        next_free( session_manager->context, new_addresses );
+        next_free( session_manager->context, new_entries );
         return false;
     }
 
@@ -6824,9 +6962,9 @@ bool next_session_manager_expand( next_session_manager_t * session_manager )
         }
     }
 
-    next_free( session_manager->session_ids );
-    next_free( session_manager->addresses );
-    next_free( session_manager->entries );
+    next_free( session_manager->context, session_manager->session_ids );
+    next_free( session_manager->context, session_manager->addresses );
+    next_free( session_manager->context, session_manager->entries );
 
     session_manager->session_ids = new_session_ids;
     session_manager->addresses = new_addresses;
@@ -7085,10 +7223,15 @@ struct NextBackendSessionUpdatePacket
     float next_jitter;
     float next_packet_loss;
     int num_near_relays;
-    uint64_t near_relay_ids[NEXT_MAX_NEAR_RELAYS];
-    float near_relay_rtt[NEXT_MAX_NEAR_RELAYS];
-    float near_relay_jitter[NEXT_MAX_NEAR_RELAYS];
-    float near_relay_packet_loss[NEXT_MAX_NEAR_RELAYS];
+    uint64_t near_relay_ids[NEXT_MAX_RELAYS];
+    float near_relay_rtt[NEXT_MAX_RELAYS];
+    float near_relay_jitter[NEXT_MAX_RELAYS];
+    float near_relay_packet_loss[NEXT_MAX_RELAYS];
+    int num_far_relays;
+    uint64_t far_relay_ids[NEXT_MAX_RELAYS];
+    float far_relay_rtt[NEXT_MAX_RELAYS];
+    float far_relay_jitter[NEXT_MAX_RELAYS];
+    float far_relay_packet_loss[NEXT_MAX_RELAYS];
     next_address_t client_address;
     uint8_t client_route_public_key[crypto_box_PUBLICKEYBYTES];
     uint32_t kbps_up;
@@ -7121,13 +7264,21 @@ struct NextBackendSessionUpdatePacket
             serialize_float( stream, next_jitter );
             serialize_float( stream, next_packet_loss );
         }
-        serialize_int( stream, num_near_relays, 0, NEXT_MAX_NEAR_RELAYS );
+        serialize_int( stream, num_near_relays, 0, NEXT_MAX_RELAYS );
         for ( int i = 0; i < num_near_relays; ++i )
         {
             serialize_uint64( stream, near_relay_ids[i] );
             serialize_float( stream, near_relay_rtt[i] );
             serialize_float( stream, near_relay_jitter[i] );
             serialize_float( stream, near_relay_packet_loss[i] );
+        }
+        serialize_int( stream, num_far_relays, 0, NEXT_MAX_RELAYS );
+        for ( int i = 0; i < num_far_relays; ++i )
+        {
+            serialize_uint64( stream, far_relay_ids[i] );
+            serialize_float( stream, far_relay_rtt[i] );
+            serialize_float( stream, far_relay_jitter[i] );
+            serialize_float( stream, far_relay_packet_loss[i] );
         }
         serialize_address( stream, client_address );
         serialize_bytes( stream, client_route_public_key, crypto_box_PUBLICKEYBYTES );
@@ -7161,6 +7312,14 @@ struct NextBackendSessionUpdatePacket
             next_write_float32( &p, near_relay_rtt[i] );
             next_write_float32( &p, near_relay_jitter[i] );
             next_write_float32( &p, near_relay_packet_loss[i] );
+        }
+        next_write_uint32( &p, num_far_relays );
+        for ( int i = 0; i < num_far_relays; ++i )
+        {
+            next_write_uint64( &p, far_relay_ids[i] );
+            next_write_float32( &p, far_relay_rtt[i] );
+            next_write_float32( &p, far_relay_jitter[i] );
+            next_write_float32( &p, far_relay_packet_loss[i] );
         }
         next_write_address( &p, &client_address );
         next_write_address( &p, &server_address );
@@ -7197,9 +7356,12 @@ struct NextBackendSessionResponsePacket
 {
     uint64_t sequence;
     uint64_t session_id;
-    int num_relays;
-    uint64_t relay_ids[NEXT_MAX_NEAR_RELAYS];
-    next_address_t relay_addresses[NEXT_MAX_NEAR_RELAYS];
+    int num_near_relays;
+    int num_far_relays;
+    uint64_t near_relay_ids[NEXT_MAX_RELAYS];
+    uint64_t far_relay_ids[NEXT_MAX_RELAYS];
+    next_address_t near_relay_addresses[NEXT_MAX_RELAYS];
+    next_address_t far_relay_addresses[NEXT_MAX_RELAYS];
     uint8_t response_type;
     bool multipath;
     int num_tokens;
@@ -7216,11 +7378,17 @@ struct NextBackendSessionResponsePacket
     {
         serialize_uint64( stream, sequence );
         serialize_uint64( stream, session_id );
-        serialize_int( stream, num_relays, 0, NEXT_MAX_NEAR_RELAYS );
-        for ( int i = 0; i < num_relays; ++i )
+        serialize_int( stream, num_near_relays, 0, NEXT_MAX_RELAYS );
+        for ( int i = 0; i < num_near_relays; ++i )
         {
-            serialize_uint64( stream, relay_ids[i] );
-            serialize_address( stream, relay_addresses[i] );
+            serialize_uint64( stream, near_relay_ids[i] );
+            serialize_address( stream, near_relay_addresses[i] );
+        }
+        serialize_int( stream, num_far_relays, 0, NEXT_MAX_RELAYS );
+        for ( int i = 0; i < num_far_relays; ++i )
+        {
+            serialize_uint64( stream, far_relay_ids[i] );
+            serialize_address( stream, far_relay_addresses[i] );
         }
         serialize_int( stream, response_type, 0, NEXT_UPDATE_TYPE_CONTINUE );
         if ( response_type != NEXT_UPDATE_TYPE_DIRECT )
@@ -7246,11 +7414,17 @@ struct NextBackendSessionResponsePacket
         uint8_t * p = buffer;
         next_write_uint64( &p, sequence );
         next_write_uint64( &p, session_id );
-        next_write_uint8( &p, num_relays );
-        for ( int i = 0; i < num_relays; ++i )
+        next_write_uint8( &p, num_near_relays );
+        for ( int i = 0; i < num_near_relays; ++i )
         {
-            next_write_uint64( &p, relay_ids[i] );
-            next_write_address( &p, &relay_addresses[i] );
+            next_write_uint64( &p, near_relay_ids[i] );
+            next_write_address( &p, &near_relay_addresses[i] );
+        }
+        next_write_uint8( &p, num_far_relays );
+        for ( int i = 0; i < num_far_relays; ++i )
+        {
+            next_write_uint64( &p, far_relay_ids[i] );
+            next_write_address( &p, &far_relay_addresses[i] );
         }
         next_write_uint8( &p, response_type );
         if ( response_type != NEXT_UPDATE_TYPE_DIRECT )
@@ -7392,7 +7566,8 @@ int next_read_backend_packet( uint8_t * packet_data, int packet_bytes, void * pa
 // ---------------------------------------------------------------
 
 #define NEXT_SERVER_COMMAND_UPGRADE_SESSION             0
-#define NEXT_SERVER_COMMAND_DESTROY                     1
+#define NEXT_SERVER_COMMAND_TAG_SESSION                 1
+#define NEXT_SERVER_COMMAND_DESTROY                     2
 
 struct next_server_command_t
 {
@@ -7405,6 +7580,12 @@ struct next_server_command_upgrade_session_t : public next_server_command_t
     uint64_t session_id;
     uint64_t user_id;
     uint64_t platform_id;
+    uint64_t tag;
+};
+
+struct next_server_command_tag_session_t : public next_server_command_t
+{
+    next_address_t address;
     uint64_t tag;
 };
 
@@ -7467,6 +7648,7 @@ struct next_server_notify_failed_to_resolve_hostname_t : public next_server_noti
 
 struct next_server_internal_t
 {
+    void * context;
     uint64_t datacenter_id;
     uint64_t customer_id;
     uint8_t customer_private_key[crypto_sign_SECRETKEYBYTES];
@@ -7504,8 +7686,12 @@ static next_platform_thread_return_t NEXT_PLATFORM_THREAD_FUNC next_server_inter
 
 static next_platform_thread_return_t NEXT_PLATFORM_THREAD_FUNC next_server_internal_thread_function( void * context );
 
-next_server_internal_t * next_server_internal_create( const char * customer_private_key_base64, const char * server_address_string, const char * bind_address_string )
+next_server_internal_t * next_server_internal_create( void * context, const char * customer_private_key_base64, const char * server_address_string, const char * bind_address_string, const char * datacenter_string )
 {
+    #if 1
+    next_printf( NEXT_LOG_LEVEL_INFO, "server sdk version is %s", NEXT_VERSION_FULL );
+    #endif // #if 1
+
     next_assert( server_address_string );
     next_assert( bind_address_string );
 
@@ -7535,7 +7721,7 @@ next_server_internal_t * next_server_internal_create( const char * customer_priv
         return NULL;
     }
 
-    next_server_internal_t * server = (next_server_internal_t*) next_malloc( sizeof(next_server_internal_t) );
+    next_server_internal_t * server = (next_server_internal_t*) next_malloc( context, sizeof(next_server_internal_t) );
     if ( !server ) 
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "server could not create internal server" );
@@ -7543,6 +7729,8 @@ next_server_internal_t * next_server_internal_create( const char * customer_priv
     }
 
     memset( server, 0, sizeof( next_server_internal_t) );
+
+    server->context = context;
 
     const char * customer_private_key_override = next_platform_getenv( "NEXT_CUSTOMER_PRIVATE_KEY" );
     if ( customer_private_key_override )
@@ -7565,20 +7753,25 @@ next_server_internal_t * next_server_internal_create( const char * customer_priv
 
     if ( !server->invalid_customer_private_key )
     {
-        const char * datacenter = next_platform_getenv( "NEXT_DATACENTER" );
-        if ( datacenter )
+        const char * datacenter = datacenter_string;
+        const char * datacenter_env = next_platform_getenv( "NEXT_DATACENTER" );
+        if ( datacenter_env )
+        {
+            datacenter = datacenter_env;
+        }
+        if ( datacenter != NULL && datacenter[0] != 0 )
         {
             next_printf( NEXT_LOG_LEVEL_INFO, "server datacenter is '%s'", datacenter );
             server->datacenter_id = next_datacenter_id( datacenter );
         }
         else
         {
-            next_printf( NEXT_LOG_LEVEL_DEBUG, "server could not determine datacenter server is running in. Is NEXT_DATACENTER set?" );
+            next_printf( NEXT_LOG_LEVEL_ERROR, "server could not determine datacenter it is running in. Is NEXT_DATACENTER set?" );
             server->no_datacenter_specified = true;
         }
     }
 
-    server->command_queue = next_queue_create( NEXT_COMMAND_QUEUE_LENGTH );
+    server->command_queue = next_queue_create( context, NEXT_COMMAND_QUEUE_LENGTH );
     if ( !server->command_queue )
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "server could not create command queue" );
@@ -7586,7 +7779,7 @@ next_server_internal_t * next_server_internal_create( const char * customer_priv
         return NULL;
     }
     
-    server->notify_queue = next_queue_create( NEXT_NOTIFY_QUEUE_LENGTH );
+    server->notify_queue = next_queue_create( context, NEXT_NOTIFY_QUEUE_LENGTH );
     if ( !server->notify_queue )
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "server could not create notify queue" );
@@ -7594,7 +7787,7 @@ next_server_internal_t * next_server_internal_create( const char * customer_priv
         return NULL;
     }
 
-    server->socket = next_platform_socket_create( &bind_address, NEXT_PLATFORM_SOCKET_BLOCKING, 0.1f, NEXT_SOCKET_SNDBUF_SIZE, NEXT_SOCKET_RCVBUF_SIZE );
+    server->socket = next_platform_socket_create( server->context, &bind_address, NEXT_PLATFORM_SOCKET_BLOCKING, 0.1f, NEXT_SOCKET_SNDBUF_SIZE, NEXT_SOCKET_RCVBUF_SIZE );
     if ( server->socket == NULL )
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "server could not create server socket" );
@@ -7615,7 +7808,7 @@ next_server_internal_t * next_server_internal_create( const char * customer_priv
     if ( internal_address_string )
         next_address_parse( &server->server_address_internal, internal_address_string );
 
-    server->session_mutex = next_platform_mutex_create();
+    server->session_mutex = next_platform_mutex_create( server->context );
     if ( server->session_mutex == NULL )
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "server could not create session mutex" );
@@ -7623,7 +7816,7 @@ next_server_internal_t * next_server_internal_create( const char * customer_priv
         return NULL;
     }
 
-    server->command_mutex = next_platform_mutex_create();
+    server->command_mutex = next_platform_mutex_create( server->context );
     if ( server->command_mutex == NULL )
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "server could not create command mutex" );
@@ -7631,7 +7824,7 @@ next_server_internal_t * next_server_internal_create( const char * customer_priv
         return NULL;
     }
 
-    server->notify_mutex = next_platform_mutex_create();
+    server->notify_mutex = next_platform_mutex_create( server->context );
     if ( server->notify_mutex == NULL )
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "server could not create notify mutex" );
@@ -7639,7 +7832,7 @@ next_server_internal_t * next_server_internal_create( const char * customer_priv
         return NULL;
     }
 
-    server->resolve_hostname_mutex = next_platform_mutex_create();
+    server->resolve_hostname_mutex = next_platform_mutex_create( server->context );
     if ( server->resolve_hostname_mutex == NULL )
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "server could not create resolve hostname mutex" );
@@ -7647,7 +7840,7 @@ next_server_internal_t * next_server_internal_create( const char * customer_priv
         return NULL;
     }
 
-    server->pending_session_manager = next_pending_session_manager_create( NEXT_INITIAL_PENDING_SESSION_SIZE );
+    server->pending_session_manager = next_pending_session_manager_create( context, NEXT_INITIAL_PENDING_SESSION_SIZE );
     if ( server->pending_session_manager == NULL )
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "server could not create pending session manager" );
@@ -7655,7 +7848,7 @@ next_server_internal_t * next_server_internal_create( const char * customer_priv
         return NULL;
     }
 
-    server->session_manager = next_session_manager_create( NEXT_INITIAL_SESSION_SIZE );
+    server->session_manager = next_session_manager_create( context, NEXT_INITIAL_SESSION_SIZE );
     if ( server->session_manager == NULL )
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "server could not create session manager" );
@@ -7663,17 +7856,13 @@ next_server_internal_t * next_server_internal_create( const char * customer_priv
         return NULL;
     }
 
-    server->resolve_hostname_thread = next_platform_thread_create( next_server_internal_resolve_hostname_thread_function, server );
+    server->resolve_hostname_thread = next_platform_thread_create( server->context, next_server_internal_resolve_hostname_thread_function, server );
     if ( !server->resolve_hostname_thread )
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "server could not create resolve hostname thread" );
         next_server_internal_destroy( server );
         return NULL;
     }
-
-    #if 1
-    next_printf( NEXT_LOG_LEVEL_INFO, "server sdk version is %s", NEXT_VERSION_FULL );
-    #endif // #if 1
 
     char address_string[NEXT_MAX_ADDRESS_STRING_LENGTH];
     next_printf( NEXT_LOG_LEVEL_INFO, "server started on %s", next_address_to_string( &server_address, address_string ) );
@@ -7731,7 +7920,7 @@ void next_server_internal_destroy( next_server_internal_t * server )
         next_pending_session_manager_destroy( server->pending_session_manager );
     }
     memset( server, 0, sizeof(next_server_internal_t) );
-    next_free( server );
+    next_free( server->context, server );
 }
 
 int next_server_internal_send_packet( next_server_internal_t * server, const next_address_t * to_address, uint8_t packet_id, void * packet_object )
@@ -7987,6 +8176,7 @@ int next_server_internal_process_packet( next_server_internal_t * server, const 
                 entry->user_id = pending_entry->user_id;
                 entry->platform_id_override = pending_entry->platform_id;
                 entry->tag = pending_entry->tag;
+                entry->client_open_session_sequence = packet.client_open_session_sequence;
 
                 // log that we upgraded
 
@@ -7995,7 +8185,7 @@ int next_server_internal_process_packet( next_server_internal_t * server, const 
 
                 // notify session upgraded
 
-                next_server_notify_session_upgraded_t * notify = (next_server_notify_session_upgraded_t*) next_malloc( sizeof( next_server_notify_session_upgraded_t ) );
+                next_server_notify_session_upgraded_t * notify = (next_server_notify_session_upgraded_t*) next_malloc( server->context, sizeof( next_server_notify_session_upgraded_t ) );
                 notify->type = NEXT_SERVER_NOTIFY_SESSION_UPGRADED;
                 notify->address = entry->address;
                 notify->session_id = entry->session_id;
@@ -8056,6 +8246,12 @@ int next_server_internal_process_packet( next_server_internal_t * server, const 
 
         case NEXT_DIRECT_PING_PACKET:
         {
+			if ( !session )
+			{
+                next_printf( NEXT_LOG_LEVEL_WARN, "server ignored direct ping packet. can't find session for address" );
+                return NEXT_ERROR;
+			}
+
             NextDirectPingPacket packet;
 
             uint64_t packet_sequence = 0;
@@ -8081,6 +8277,12 @@ int next_server_internal_process_packet( next_server_internal_t * server, const 
 
         case NEXT_CLIENT_STATS_PACKET:
         {
+			if ( !session )
+			{
+                next_printf( NEXT_LOG_LEVEL_WARN, "server ignored direct ping packet. can't find session for address" );
+                return NEXT_ERROR;
+			}
+
             NextClientStatsPacket packet;
 
             uint64_t packet_sequence = 0;
@@ -8118,6 +8320,14 @@ int next_server_internal_process_packet( next_server_internal_t * server, const 
                     session->stats_near_relay_jitter[i] = packet.near_relay_jitter[i];
                     session->stats_near_relay_packet_loss[i] = packet.near_relay_packet_loss[i];
                 }
+                session->stats_num_far_relays = packet.num_far_relays;
+                for ( int i = 0; i < packet.num_far_relays; ++i )
+                {
+                    session->stats_far_relay_ids[i] = packet.far_relay_ids[i];
+                    session->stats_far_relay_rtt[i] = packet.far_relay_rtt[i];
+                    session->stats_far_relay_jitter[i] = packet.far_relay_jitter[i];
+                    session->stats_far_relay_packet_loss[i] = packet.far_relay_packet_loss[i];
+                }
                 session->last_client_stats_update = next_time();
 
                 if ( session->stats_fallback_to_direct && session->has_current_route )
@@ -8140,6 +8350,12 @@ int next_server_internal_process_packet( next_server_internal_t * server, const 
 
         case NEXT_ROUTE_UPDATE_ACK_PACKET:
         {
+			if ( !session )
+			{
+                next_printf( NEXT_LOG_LEVEL_WARN, "server ignored direct ping packet. can't find session for address" );
+                return NEXT_ERROR;
+			}
+
             NextRouteUpdateAckPacket packet;
 
             uint64_t packet_sequence = 0;
@@ -8216,6 +8432,11 @@ int next_server_internal_process_packet( next_server_internal_t * server, const 
 
             next_printf( NEXT_LOG_LEVEL_DEBUG, "server received session response for %" PRIx64 " (%s)", entry->session_id, update_type );
 
+            if ( packet.multipath )
+            {
+                next_printf( NEXT_LOG_LEVEL_DEBUG, "multipath is enabled for session %" PRIx64 " (%s)", entry->session_id );
+            }
+
             entry->update_dirty = true;
             entry->update_type = (uint8_t) packet.response_type;
             entry->multipath = packet.multipath;
@@ -8228,9 +8449,12 @@ int next_server_internal_process_packet( next_server_internal_t * server, const 
             {
                 memcpy( entry->update_tokens, packet.tokens, NEXT_ENCRYPTED_CONTINUE_TOKEN_BYTES * packet.num_tokens );
             }
-            entry->update_num_near_relays = packet.num_relays;
-            memcpy( entry->update_near_relay_ids, packet.relay_ids, 8 * packet.num_relays );
-            memcpy( entry->update_near_relay_addresses, packet.relay_addresses, sizeof(next_address_t) * packet.num_relays );
+            entry->update_num_near_relays = packet.num_near_relays;
+            memcpy( entry->update_near_relay_ids, packet.near_relay_ids, 8 * packet.num_near_relays );
+            memcpy( entry->update_near_relay_addresses, packet.near_relay_addresses, sizeof(next_address_t) * packet.num_near_relays );
+            entry->update_num_far_relays = packet.num_far_relays;
+            memcpy( entry->update_far_relay_ids, packet.far_relay_ids, 8 * packet.num_far_relays );
+            memcpy( entry->update_far_relay_addresses, packet.far_relay_addresses, sizeof(next_address_t) * packet.num_far_relays );
             entry->update_last_send_time = -1000.0;
             entry->session_update_backoff -= NEXT_SESSION_UPDATE_BACKOFF_RECOVERY_SUBTRACT;
             if ( entry->session_update_backoff < NEXT_SESSION_UPDATE_BACKOFF_MINIMUM_TIME )
@@ -8419,7 +8643,7 @@ int next_server_internal_process_packet( next_server_internal_t * server, const 
             if ( !entry )
                 return NEXT_ERROR;
 
-            next_server_notify_packet_received_t * notify = (next_server_notify_packet_received_t*) next_malloc( sizeof( next_server_notify_packet_received_t ) );
+            next_server_notify_packet_received_t * notify = (next_server_notify_packet_received_t*) next_malloc( server->context, sizeof( next_server_notify_packet_received_t ) );
             notify->type = NEXT_SERVER_NOTIFY_PACKET_RECEIVED;
             notify->from = entry->address;
             notify->packet_bytes = packet_bytes - NEXT_HEADER_BYTES;
@@ -8489,9 +8713,12 @@ void next_server_internal_update_route( next_server_internal_t * server )
         {
             NextRouteUpdatePacket packet;
             packet.sequence = entry->update_sequence;
-            packet.num_relays = entry->update_num_near_relays;
-            memcpy( packet.relay_ids, entry->update_near_relay_ids, 8 * entry->update_num_near_relays );
-            memcpy( packet.relay_addresses, entry->update_near_relay_addresses, sizeof(next_address_t) * entry->update_num_near_relays );
+            packet.num_near_relays = entry->update_num_near_relays;
+            memcpy( packet.near_relay_ids, entry->update_near_relay_ids, 8 * entry->update_num_near_relays );
+            memcpy( packet.near_relay_addresses, entry->update_near_relay_addresses, sizeof(next_address_t) * entry->update_num_near_relays );
+            packet.num_far_relays = entry->update_num_far_relays;
+            memcpy( packet.far_relay_ids, entry->update_far_relay_ids, 8 * entry->update_num_far_relays );
+            memcpy( packet.far_relay_addresses, entry->update_far_relay_addresses, sizeof(next_address_t) * entry->update_num_far_relays );
             packet.update_type = entry->update_type;
             packet.multipath = entry->multipath;
             packet.num_tokens = entry->update_num_tokens;
@@ -8536,7 +8763,7 @@ void next_server_internal_update_pending_upgrades( next_server_internal_t * serv
             char address_buffer[NEXT_MAX_ADDRESS_STRING_LENGTH];
             next_printf( NEXT_LOG_LEVEL_ERROR, "server upgrade request timed out for client %s", next_address_to_string( &entry->address, address_buffer ) );
             next_pending_session_manager_remove_at_index( server->pending_session_manager, i );
-            next_server_notify_pending_session_timed_out_t * notify = (next_server_notify_pending_session_timed_out_t*) next_malloc( sizeof( next_server_notify_pending_session_timed_out_t ) );
+            next_server_notify_pending_session_timed_out_t * notify = (next_server_notify_pending_session_timed_out_t*) next_malloc( server->context, sizeof( next_server_notify_pending_session_timed_out_t ) );
             notify->type = NEXT_SERVER_NOTIFY_PENDING_SESSION_TIMED_OUT;
             notify->address = entry->address;
             notify->session_id = entry->session_id;
@@ -8572,30 +8799,36 @@ void next_server_internal_update_sessions( next_server_internal_t * server )
 
     const double current_time = next_time();
     
-    const int max_index = server->session_manager->max_entry_index;
+    int index = 0;
 
-    for ( int i = 0; i <= max_index; ++i )
+    while ( index <= server->session_manager->max_entry_index )
     {
-        if ( server->session_manager->addresses[i].type == NEXT_ADDRESS_NONE )
+        if ( server->session_manager->session_ids[index] == 0 )
+        {
+            ++index;
             continue;
+        }
      
-        next_session_entry_t * entry = &server->session_manager->entries[i];
+        next_session_entry_t * entry = &server->session_manager->entries[index];
 
         if ( entry->last_client_stats_update + NEXT_SESSION_TIMEOUT <= current_time )
         {
             char address_buffer[NEXT_MAX_ADDRESS_STRING_LENGTH];
-            next_printf( NEXT_LOG_LEVEL_DEBUG, "server session timed out for client %s", next_address_to_string( &entry->address, address_buffer ) );
-            next_platform_mutex_acquire( server->session_mutex );
-            next_session_manager_remove_at_index( server->session_manager, i );
-            next_platform_mutex_release( server->session_mutex );
-            next_server_notify_session_timed_out_t * notify = (next_server_notify_session_timed_out_t*) next_malloc( sizeof( next_server_notify_session_timed_out_t ) );
+            next_printf( NEXT_LOG_LEVEL_INFO, "server session timed out for client %s", next_address_to_string( &entry->address, address_buffer ) );
+
+            next_server_notify_session_timed_out_t * notify = (next_server_notify_session_timed_out_t*) next_malloc( server->context, sizeof( next_server_notify_session_timed_out_t ) );
             notify->type = NEXT_SERVER_NOTIFY_SESSION_TIMED_OUT;
             notify->address = entry->address;
             notify->session_id = entry->session_id;
             {
                 next_mutex_guard( server->notify_mutex );
-                next_queue_push( server->notify_queue, notify );            
+                next_queue_push( server->notify_queue, notify );
             }
+
+            next_platform_mutex_acquire( server->session_mutex );
+            next_session_manager_remove_at_index( server->session_manager, index );
+            next_platform_mutex_release( server->session_mutex );
+
             continue;
         }
 
@@ -8611,9 +8844,9 @@ void next_server_internal_update_sessions( next_server_internal_t * server )
             next_platform_mutex_acquire( server->session_mutex );
             entry->mutex_send_over_network_next = false;
             next_platform_mutex_release( server->session_mutex );
-
-            continue;
         }
+
+        index++;
     }
 }
 
@@ -8630,7 +8863,7 @@ void next_server_internal_block_and_receive_packet( next_server_internal_t * ser
 
     if ( packet_data[0] == 0 && packet_bytes >= 2 && packet_bytes <= NEXT_MTU + 1 )
     {
-        next_server_notify_packet_received_t * notify = (next_server_notify_packet_received_t*) next_malloc( sizeof( next_server_notify_packet_received_t ) );
+        next_server_notify_packet_received_t * notify = (next_server_notify_packet_received_t*) next_malloc( server->context, sizeof( next_server_notify_packet_received_t ) );
         notify->type = NEXT_SERVER_NOTIFY_PACKET_RECEIVED;
         notify->from = from;
         notify->packet_bytes = packet_bytes - 1;
@@ -8640,9 +8873,10 @@ void next_server_internal_block_and_receive_packet( next_server_internal_t * ser
             next_queue_push( server->notify_queue, notify );            
         }
     }
-    else if ( packet_data[0] == 255 && packet_bytes >= 10 && packet_bytes <= NEXT_MTU + 9 )
+    else if ( packet_data[0] == 255 && packet_bytes >= 11 && packet_bytes <= NEXT_MTU + 10 )
     {
         const uint8_t * p = packet_data + 1;
+        uint8_t packet_session_sequence = next_read_uint8( &p );
         uint64_t packet_sequence = next_read_uint64( &p );
         next_session_entry_t * entry = next_session_manager_find_by_address( server->session_manager, &from );
         if ( !entry )
@@ -8650,17 +8884,22 @@ void next_server_internal_block_and_receive_packet( next_server_internal_t * ser
             next_printf( NEXT_LOG_LEVEL_WARN, "server ignored direct packet. could not find session for address" );
             return;
         }
+        if ( packet_session_sequence != entry->client_open_session_sequence )
+        {
+            next_printf( NEXT_LOG_LEVEL_DEBUG, "server ignored direct packet. session mismatch" );
+            return;
+        }
         if ( next_replay_protection_already_received( &entry->session_replay_protection, packet_sequence ) )
         {
-            next_printf( NEXT_LOG_LEVEL_WARN, "server ignored direct packet. already received (%" PRIx64 ",%" PRIx64 ")", packet_sequence, entry->session_replay_protection.most_recent_sequence );
+            next_printf( NEXT_LOG_LEVEL_WARN, "server ignored direct packet. already received (%" PRIx64 " vs. %" PRIx64 ")", packet_sequence, entry->session_replay_protection.most_recent_sequence );
             return;
         }
         next_replay_protection_advance_sequence( &entry->session_replay_protection, packet_sequence );
-        next_server_notify_packet_received_t * notify = (next_server_notify_packet_received_t*) next_malloc( sizeof( next_server_notify_packet_received_t ) );
+        next_server_notify_packet_received_t * notify = (next_server_notify_packet_received_t*) next_malloc( server->context, sizeof( next_server_notify_packet_received_t ) );
         notify->type = NEXT_SERVER_NOTIFY_PACKET_RECEIVED;
         notify->from = from;
-        notify->packet_bytes = packet_bytes - 9;
-        memcpy( notify->packet_data, packet_data + 9, packet_bytes - 9 );
+        notify->packet_bytes = packet_bytes - 10;
+        memcpy( notify->packet_data, packet_data + 10, packet_bytes - 10 );
         {
             next_mutex_guard( server->notify_mutex );
             next_queue_push( server->notify_queue, notify );            
@@ -8711,6 +8950,26 @@ void next_server_internal_upgrade_session( next_server_internal_t * server, cons
     entry->tag = tag;
 }
 
+void next_server_internal_tag_session( next_server_internal_t * server, const next_address_t * address, uint64_t tag )
+{
+    next_assert( server );
+    next_assert( address );
+
+    next_pending_session_entry_t * pending_entry = next_pending_session_manager_find( server->pending_session_manager, address );
+    if ( pending_entry )
+    {
+        pending_entry->tag = tag;
+        return;
+    }
+
+    next_session_entry_t * entry = next_session_manager_find_by_address( server->session_manager, address );    
+    if ( entry )
+    {
+        entry->tag = tag;
+        return;
+    }
+}
+
 bool next_server_internal_pump_commands( next_server_internal_t * server, bool quit )
 {
     while ( true )
@@ -8735,6 +8994,13 @@ bool next_server_internal_pump_commands( next_server_internal_t * server, bool q
             }
             break;
 
+            case NEXT_SERVER_COMMAND_TAG_SESSION:
+            {
+                next_server_command_tag_session_t * tag_session = (next_server_command_tag_session_t*) command;
+                next_server_internal_tag_session( server, &tag_session->address, tag_session->tag );
+            }
+            break;
+
             case NEXT_SERVER_COMMAND_DESTROY:
             {
                 quit = true;
@@ -8744,7 +9010,7 @@ bool next_server_internal_pump_commands( next_server_internal_t * server, bool q
             default: break;                
         }
 
-        next_free( command );
+        next_free( server->context, command );
     }
 
     return quit;
@@ -8826,7 +9092,7 @@ static bool next_server_internal_update_resolve_hostname( next_server_internal_t
     if ( result.type == NEXT_ADDRESS_NONE )
     {
         server->failed_to_resolve_hostname = true;
-        next_server_notify_failed_to_resolve_hostname_t * notify = (next_server_notify_failed_to_resolve_hostname_t*) next_malloc( sizeof( next_server_notify_failed_to_resolve_hostname_t ) );
+        next_server_notify_failed_to_resolve_hostname_t * notify = (next_server_notify_failed_to_resolve_hostname_t*) next_malloc( server->context, sizeof( next_server_notify_failed_to_resolve_hostname_t ) );
         notify->type = NEXT_SERVER_NOTIFY_FAILED_TO_RESOLVE_HOSTNAME;
         {
             next_mutex_guard( server->notify_mutex );
@@ -8933,6 +9199,14 @@ void next_server_internal_backend_update( next_server_internal_t * server )
                 packet.near_relay_jitter[j] = session->stats_near_relay_jitter[j];
                 packet.near_relay_packet_loss[j] = session->stats_near_relay_packet_loss[j];
             }
+            packet.num_far_relays = session->stats_num_far_relays;
+            for ( int j = 0; j < packet.num_far_relays; ++j )
+            {
+                packet.far_relay_ids[j] = session->stats_far_relay_ids[j];
+                packet.far_relay_rtt[j] = session->stats_far_relay_rtt[j];
+                packet.far_relay_jitter[j] = session->stats_far_relay_jitter[j];
+                packet.far_relay_packet_loss[j] = session->stats_far_relay_packet_loss[j];
+            }
             packet.client_address = session->address;
             packet.server_address = server->server_address;
             memcpy( packet.client_route_public_key, session->client_route_public_key, crypto_box_PUBLICKEYBYTES );
@@ -9006,10 +9280,10 @@ static next_platform_thread_return_t NEXT_PLATFORM_THREAD_FUNC next_server_inter
 
 struct next_server_t
 {
+    void * context;
     next_server_internal_t * internal;
     next_platform_thread_t * thread;
     bool failed_to_resolve_hostname;
-    void * callback_context;
     void (*packet_received_callback)( next_server_t * server, void * context, const next_address_t * from, const uint8_t * packet_data, int packet_bytes );
     next_proxy_session_manager_t * pending_session_manager;
     next_proxy_session_manager_t * session_manager;
@@ -9018,19 +9292,21 @@ struct next_server_t
 
 void next_server_destroy( next_server_t * server );
 
-next_server_t * next_server_create( const char * customer_private_key_base64, const char * server_address, const char * bind_address, void * callback_context, void (*packet_received_callback)( next_server_t * server, void * context, const next_address_t * from, const uint8_t * packet_data, int packet_bytes ) )
+next_server_t * next_server_create( void * context, const char * customer_private_key_base64, const char * server_address, const char * bind_address, const char * datacenter, void (*packet_received_callback)( next_server_t * server, void * context, const next_address_t * from, const uint8_t * packet_data, int packet_bytes ) )
 {
     next_assert( server_address );
     next_assert( bind_address );
     next_assert( packet_received_callback );
 
-    next_server_t * server = (next_server_t*) next_malloc( sizeof(next_server_t) );
+    next_server_t * server = (next_server_t*) next_malloc( context, sizeof(next_server_t) );
     if ( !server ) 
         return NULL;
 
     memset( server, 0, sizeof( next_server_t) );
 
-    server->internal = next_server_internal_create( customer_private_key_base64, server_address, bind_address );
+    server->context = context;
+
+    server->internal = next_server_internal_create( context, customer_private_key_base64, server_address, bind_address, datacenter );
     if ( !server->internal )
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "server could not create internal server" );
@@ -9040,7 +9316,7 @@ next_server_t * next_server_create( const char * customer_private_key_base64, co
 
     server->bound_port = server->internal->server_address.port;
 
-    server->thread = next_platform_thread_create( next_server_internal_thread_function, server->internal );
+    server->thread = next_platform_thread_create( server->context, next_server_internal_thread_function, server->internal );
     if ( !server->thread )
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "server could not create server thread" );
@@ -9048,7 +9324,7 @@ next_server_t * next_server_create( const char * customer_private_key_base64, co
         return NULL;
     }
 
-    server->pending_session_manager = next_proxy_session_manager_create( NEXT_INITIAL_PENDING_SESSION_SIZE );
+    server->pending_session_manager = next_proxy_session_manager_create( context, NEXT_INITIAL_PENDING_SESSION_SIZE );
     if ( server->pending_session_manager == NULL )
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "server could not create pending session manager (proxy)" );
@@ -9056,7 +9332,7 @@ next_server_t * next_server_create( const char * customer_private_key_base64, co
         return NULL;
     }
 
-    server->session_manager = next_proxy_session_manager_create( NEXT_INITIAL_SESSION_SIZE );
+    server->session_manager = next_proxy_session_manager_create( context, NEXT_INITIAL_SESSION_SIZE );
     if ( server->session_manager == NULL )
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "server could not create session manager (proxy)" );
@@ -9064,7 +9340,7 @@ next_server_t * next_server_create( const char * customer_private_key_base64, co
         return NULL;
     }
 
-    server->callback_context = callback_context;
+    server->context = context;
     server->packet_received_callback = packet_received_callback;
 
     return server;
@@ -9091,7 +9367,7 @@ void next_server_destroy( next_server_t * server )
 
     if ( server->thread )
     {
-        next_server_command_destroy_t * command = (next_server_command_destroy_t*) next_malloc( sizeof( next_server_command_destroy_t ) );
+        next_server_command_destroy_t * command = (next_server_command_destroy_t*) next_malloc( server->context, sizeof( next_server_command_destroy_t ) );
         if ( !command )
         {
             next_printf( NEXT_LOG_LEVEL_ERROR, "server destroy failed. could not create destroy command" );
@@ -9114,7 +9390,7 @@ void next_server_destroy( next_server_t * server )
 
     memset( server, 0, sizeof(next_server_t) );
 
-    next_free( server );
+    next_free( server->context, server );
 }
 
 void next_server_update( next_server_t * server )
@@ -9141,7 +9417,7 @@ void next_server_update( next_server_t * server )
                 next_server_notify_packet_received_t * packet_received = (next_server_notify_packet_received_t*) notify;
                 next_assert( packet_received->packet_data );
                 next_assert( packet_received->packet_bytes > 0 && packet_received->packet_bytes <= NEXT_MTU );
-                server->packet_received_callback( server, server->callback_context, &packet_received->from, packet_received->packet_data, packet_received->packet_bytes );
+                server->packet_received_callback( server, server->context, &packet_received->from, packet_received->packet_data, packet_received->packet_bytes );
             }
             break;
 
@@ -9196,7 +9472,7 @@ void next_server_update( next_server_t * server )
             default: break;
         }
 
-        next_free( queue_entry );
+        next_free( server->context, queue_entry );
     }
 }
 
@@ -9235,7 +9511,7 @@ uint64_t next_server_upgrade_session( next_server_t * server, const next_address
 
     // send upgrade session command to internal server
 
-    next_server_command_upgrade_session_t * command = (next_server_command_upgrade_session_t*) next_malloc( sizeof( next_server_command_upgrade_session_t ) );
+    next_server_command_upgrade_session_t * command = (next_server_command_upgrade_session_t*) next_malloc( server->context, sizeof( next_server_command_upgrade_session_t ) );
     if ( !command )
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "server upgrade session failed. could not create upgrade session command" );
@@ -9279,6 +9555,41 @@ uint64_t next_server_upgrade_session( next_server_t * server, const next_address
     }
 
     return session_id;
+}
+
+void next_server_tag_session( next_server_t * server, const next_address_t * address, const char * tag )
+{
+    next_assert( server );
+    next_assert( server->internal );
+    next_assert( server->internal->command_mutex );
+    next_assert( server->internal->command_queue );
+
+    // send tag session command to internal server
+
+    next_server_command_tag_session_t * command = (next_server_command_tag_session_t*) next_malloc( server->context, sizeof( next_server_command_tag_session_t ) );
+    if ( !command )
+    {
+        next_printf( NEXT_LOG_LEVEL_ERROR, "server tag session failed. could not create tag session command" );
+        return;
+    }
+
+    uint64_t session_id = next_generate_session_id();
+
+    uint64_t tag_id = next_tag_id( tag );
+    
+    if ( tag_id != 0 )
+    {
+        next_printf( NEXT_LOG_LEVEL_INFO, "server tagged session %" PRIx64 " as '%s' [%" PRIx64 "]", session_id, tag, tag_id );
+    }
+
+    command->type = NEXT_SERVER_COMMAND_UPGRADE_SESSION;
+    command->address = *address;
+    command->tag = tag_id;
+
+    {    
+        next_mutex_guard( server->internal->command_mutex );
+        next_queue_push( server->internal->command_queue, command );
+    }
 }
 
 int next_server_session_upgraded( next_server_t * server, const next_address_t * address )
@@ -9326,6 +9637,7 @@ void next_server_send_packet( next_server_t * server, const next_address_t * to_
     {
         bool multipath = false;
         int envelope_kbps_down = 0;
+        uint8_t open_session_sequence = 0;
         uint64_t send_sequence = 0;
         uint64_t session_id = 0;
         uint8_t session_version = 0;
@@ -9343,6 +9655,7 @@ void next_server_send_packet( next_server_t * server, const next_address_t * to_
             send_upgraded_direct = !send_over_network_next || multipath;
             send_sequence = internal_entry->mutex_send_sequence++;
             send_sequence |= uint64_t(1) << 63;
+            open_session_sequence = internal_entry->client_open_session_sequence;
             session_id = internal_entry->mutex_session_id;
             session_version = internal_entry->mutex_session_version;
             session_address = internal_entry->mutex_send_address;
@@ -9363,7 +9676,7 @@ void next_server_send_packet( next_server_t * server, const next_address_t * to_
                     send_over_network_next = false;
                     if ( !multipath )
                     {
-                        next_printf( NEXT_LOG_LEVEL_WARN, "server exceeded bandwidth budget for %" PRIx64 " (%d kbps). sending direct instead", envelope_kbps_down, session_id );
+                        next_printf( NEXT_LOG_LEVEL_WARN, "server exceeded bandwidth budget for %" PRIx64 " (%d kbps). sending direct instead", session_id, envelope_kbps_down );
                         send_upgraded_direct = true;
                     }
                 }
@@ -9390,14 +9703,15 @@ void next_server_send_packet( next_server_t * server, const next_address_t * to_
 
             if ( send_upgraded_direct )
             {
-                // [255][sequence](payload) style packet direct to client
+                // [255][open session sequence][packet sequence](payload) style packet direct to client
 
-                uint8_t buffer[9+NEXT_MTU];
+                uint8_t buffer[10+NEXT_MTU];
                 uint8_t * p = buffer;
                 next_write_uint8( &p, 255 );
+                next_write_uint8( &p, open_session_sequence );
                 next_write_uint64( &p, send_sequence );
-                memcpy( buffer+9, packet_data, packet_bytes );
-                next_platform_socket_send_packet( server->internal->socket, to_address, buffer, packet_bytes + 9 );
+                memcpy( buffer+10, packet_data, packet_bytes );
+                next_platform_socket_send_packet( server->internal->socket, to_address, buffer, packet_bytes + 10 );
             }
         }
     }
@@ -9522,7 +9836,7 @@ static void test_queue()
     const int QueueSize = 64;
     const int EntrySize = 1024;
 
-    next_queue_t * queue = next_queue_create( QueueSize );
+    next_queue_t * queue = next_queue_create( NULL, QueueSize );
 
     check( queue->num_entries == 0 );
     check( queue->start_index == 0 );
@@ -9540,7 +9854,7 @@ static void test_queue()
         int i;
         for ( i = 0; i < NumEntries; ++i )
         {
-            entries[i] = next_malloc( EntrySize );
+            entries[i] = next_malloc( NULL, EntrySize );
             memset( entries[i], 0, EntrySize );
             check( next_queue_push( queue, entries[i] ) == NEXT_OK );
         }
@@ -9551,7 +9865,7 @@ static void test_queue()
         {
             void * entry = next_queue_pop( queue );
             check( entry == entries[i] );
-            free( entry );
+            next_free( NULL, entry );
         }
     }
 
@@ -9568,7 +9882,7 @@ static void test_queue()
     int i;
     for ( i = 0; i < QueueSize; ++i )
     {
-        entries[i] = next_malloc( EntrySize );
+        entries[i] = next_malloc( NULL, EntrySize );
         check( next_queue_push( queue, entries[i] ) == NEXT_OK );
     }
 
@@ -9576,7 +9890,7 @@ static void test_queue()
 
     // when the queue is full, attempting to push an entry should fail
 
-    check( next_queue_push( queue, next_malloc( 100 ) ) == NEXT_ERROR );
+    check( next_queue_push( queue, next_malloc( NULL, 100 ) ) == NEXT_ERROR );
 
     // make sure all packets pop off in the correct order
 
@@ -9584,14 +9898,14 @@ static void test_queue()
     {
         void * entry = next_queue_pop( queue );
         check( entry == entries[i] );
-        next_free( entry );
+        next_free( NULL, entry );
     }
 
     // add some entries again
 
     for ( i = 0; i < QueueSize; ++i )
     {
-        entries[i] = next_malloc( EntrySize );
+        entries[i] = next_malloc( NULL, EntrySize );
         check( next_queue_push( queue, entries[i] ) == NEXT_OK );
     }
 
@@ -10455,7 +10769,7 @@ static void test_platform_socket()
         next_address_t local_address;
         next_address_parse( &bind_address, "0.0.0.0" );
         next_address_parse( &local_address, "127.0.0.1" );
-        next_platform_socket_t * socket = next_platform_socket_create( &bind_address, NEXT_PLATFORM_SOCKET_NON_BLOCKING, 0, 64*1024, 64*1024 );
+        next_platform_socket_t * socket = next_platform_socket_create( NULL, &bind_address, NEXT_PLATFORM_SOCKET_NON_BLOCKING, 0, 64*1024, 64*1024 );
         local_address.port = bind_address.port;
         check( socket );
         uint8_t packet[256];
@@ -10475,7 +10789,7 @@ static void test_platform_socket()
         next_address_t local_address;
         next_address_parse( &bind_address, "0.0.0.0" );
         next_address_parse( &local_address, "127.0.0.1" );
-        next_platform_socket_t * socket = next_platform_socket_create( &bind_address, NEXT_PLATFORM_SOCKET_BLOCKING, 0.01f, 64*1024, 64*1024 );
+        next_platform_socket_t * socket = next_platform_socket_create( NULL, &bind_address, NEXT_PLATFORM_SOCKET_BLOCKING, 0.01f, 64*1024, 64*1024 );
         local_address.port = bind_address.port;
         check( socket );
         uint8_t packet[256];
@@ -10495,7 +10809,7 @@ static void test_platform_socket()
         next_address_t local_address;
         next_address_parse( &bind_address, "0.0.0.0" );
         next_address_parse( &local_address, "127.0.0.1" );
-        next_platform_socket_t * socket = next_platform_socket_create( &bind_address, NEXT_PLATFORM_SOCKET_BLOCKING, -1.0f, 64*1024, 64*1024 );
+        next_platform_socket_t * socket = next_platform_socket_create( NULL, &bind_address, NEXT_PLATFORM_SOCKET_BLOCKING, -1.0f, 64*1024, 64*1024 );
         local_address.port = bind_address.port;
         check( socket );
         uint8_t packet[256];
@@ -10514,7 +10828,7 @@ static void test_platform_socket()
         next_address_t local_address;
         next_address_parse( &bind_address, "[::]" );
         next_address_parse( &local_address, "[::1]" );
-        next_platform_socket_t * socket = next_platform_socket_create( &bind_address, NEXT_PLATFORM_SOCKET_NON_BLOCKING, 0, 64*1024, 64*1024 );
+        next_platform_socket_t * socket = next_platform_socket_create( NULL, &bind_address, NEXT_PLATFORM_SOCKET_NON_BLOCKING, 0, 64*1024, 64*1024 );
         local_address.port = bind_address.port;
         check( socket );
         uint8_t packet[256];
@@ -10534,7 +10848,7 @@ static void test_platform_socket()
         next_address_t local_address;
         next_address_parse( &bind_address, "[::]" );
         next_address_parse( &local_address, "[::1]" );
-        next_platform_socket_t * socket = next_platform_socket_create( &bind_address, NEXT_PLATFORM_SOCKET_BLOCKING, 0.01f, 64*1024, 64*1024 );
+        next_platform_socket_t * socket = next_platform_socket_create( NULL, &bind_address, NEXT_PLATFORM_SOCKET_BLOCKING, 0.01f, 64*1024, 64*1024 );
         local_address.port = bind_address.port;
         check( socket );
         uint8_t packet[256];
@@ -10554,7 +10868,7 @@ static void test_platform_socket()
         next_address_t local_address;
         next_address_parse( &bind_address, "[::]" );
         next_address_parse( &local_address, "[::1]" );
-        next_platform_socket_t * socket = next_platform_socket_create( &bind_address, NEXT_PLATFORM_SOCKET_BLOCKING, -1.0f, 64*1024, 64*1024 );
+        next_platform_socket_t * socket = next_platform_socket_create( NULL, &bind_address, NEXT_PLATFORM_SOCKET_BLOCKING, -1.0f, 64*1024, 64*1024 );
         local_address.port = bind_address.port;
         check( socket );
         uint8_t packet[256];
@@ -10578,7 +10892,7 @@ static next_platform_thread_return_t NEXT_PLATFORM_THREAD_FUNC test_thread_funct
 
 static void test_platform_thread()
 {
-    next_platform_thread_t * thread = next_platform_thread_create( test_thread_function, NULL );
+    next_platform_thread_t * thread = next_platform_thread_create( NULL, test_thread_function, NULL );
     check( thread );
     next_platform_thread_join( thread );
     next_platform_thread_destroy( thread );
@@ -10587,7 +10901,7 @@ static void test_platform_thread()
 
 static void test_platform_mutex()
 {
-    next_platform_mutex_t * mutex = next_platform_mutex_create();
+    next_platform_mutex_t * mutex = next_platform_mutex_create( NULL );
     check( mutex );
     next_platform_mutex_acquire( mutex );
     next_platform_mutex_release( mutex );
@@ -10611,7 +10925,7 @@ static void test_client_packet_received_callback( next_client_t * client, void *
 
 static void test_client()
 {
-    next_client_t * client = next_client_create( "", NULL, test_client_packet_received_callback );
+    next_client_t * client = next_client_create( NULL, "", test_client_packet_received_callback );
     check( client );
     next_client_open_session( client, "127.0.0.1:12345" );
     uint8_t packet[256];
@@ -10633,7 +10947,7 @@ static void test_server_packet_received_callback( next_server_t * server, void *
 
 static void test_server()
 {
-    next_server_t * server = next_server_create( "", "127.0.0.1:0", "0.0.0.0:0", NULL, test_server_packet_received_callback );
+    next_server_t * server = next_server_create( NULL, "", "127.0.0.1:0", "0.0.0.0:0", "local", test_server_packet_received_callback );
     check( server );
     next_address_t address;
     next_address_parse( &address, "127.0.0.1" );
@@ -10648,7 +10962,7 @@ static void test_server()
 
 static void test_direct()
 {
-    next_server_t * server = next_server_create( NULL, "127.0.0.1", "0.0.0.0", NULL, test_server_packet_received_callback );
+    next_server_t * server = next_server_create( NULL, NULL, "127.0.0.1", "0.0.0.0", "local", test_server_packet_received_callback );
     check( server );
     next_client_t * client = next_client_create( NULL, NULL, test_client_packet_received_callback );
     check( client );
@@ -10814,13 +11128,21 @@ static void test_packets()
         in.next_rtt = 50.0f;
         in.next_jitter = 5.0f;
         in.next_packet_loss = 0.01f;
-        in.num_near_relays = NEXT_MAX_NEAR_RELAYS;
-        for ( int i = 0; i < NEXT_MAX_NEAR_RELAYS; ++i )
+        in.num_near_relays = NEXT_MAX_RELAYS;
+        for ( int i = 0; i < NEXT_MAX_RELAYS; ++i )
         {
             in.near_relay_ids[i] = 10000000 + i;
             in.near_relay_rtt[i] = 5 * i;
             in.near_relay_jitter[i] = 0.01f * i;
             in.near_relay_packet_loss[i] = i;
+        }
+        in.num_far_relays = NEXT_MAX_RELAYS;
+        for ( int i = 0; i < NEXT_MAX_RELAYS; ++i )
+        {
+            in.far_relay_ids[i] = 10000000 + i;
+            in.far_relay_rtt[i] = 5 * i;
+            in.far_relay_jitter[i] = 0.01f * i;
+            in.far_relay_packet_loss[i] = i;
         }
         uint64_t in_sequence = 1000;
         uint64_t out_sequence = 0;
@@ -10842,12 +11164,20 @@ static void test_packets()
         check( in.next_jitter == out.next_jitter );
         check( in.next_packet_loss == out.next_packet_loss );
         check( in.num_near_relays == out.num_near_relays );
-        for ( int i = 0; i < NEXT_MAX_NEAR_RELAYS; ++i )
+        for ( int i = 0; i < NEXT_MAX_RELAYS; ++i )
         {
             check( in.near_relay_ids[i] == out.near_relay_ids[i] );
             check( in.near_relay_rtt[i] == out.near_relay_rtt[i] );
             check( in.near_relay_jitter[i] == out.near_relay_jitter[i] );
             check( in.near_relay_packet_loss[i] == out.near_relay_packet_loss[i] );
+        }
+        check( in.num_far_relays == out.num_far_relays );
+        for ( int i = 0; i < NEXT_MAX_RELAYS; ++i )
+        {
+            check( in.far_relay_ids[i] == out.far_relay_ids[i] );
+            check( in.far_relay_rtt[i] == out.far_relay_rtt[i] );
+            check( in.far_relay_jitter[i] == out.far_relay_jitter[i] );
+            check( in.far_relay_packet_loss[i] == out.far_relay_packet_loss[i] );
         }
     }
 
@@ -10856,15 +11186,25 @@ static void test_packets()
         NextRouteUpdatePacket in, out;
         in.fallback_to_direct_sequence = 100;
         in.sequence = 100000;
-        in.num_relays = NEXT_MAX_NEAR_RELAYS;
-        for ( int i = 0; i < NEXT_MAX_NEAR_RELAYS; ++i )
+        in.num_near_relays = NEXT_MAX_RELAYS;
+        for ( int i = 0; i < NEXT_MAX_RELAYS; ++i )
         {
             char relay_name[32];
             char relay_address[256];
             sprintf( relay_name, "relay%d", i );
             sprintf( relay_address, "127.0.0.1:%d", 40000 + i );
-            in.relay_ids[i] = next_relay_id( relay_name );
-            next_address_parse( &in.relay_addresses[i], relay_address );
+            in.near_relay_ids[i] = next_relay_id( relay_name );
+            next_address_parse( &in.near_relay_addresses[i], relay_address );
+        }
+        in.num_far_relays = NEXT_MAX_RELAYS;
+        for ( int i = 0; i < NEXT_MAX_RELAYS; ++i )
+        {
+            char relay_name[32];
+            char relay_address[256];
+            sprintf( relay_name, "relay%d", i );
+            sprintf( relay_address, "127.0.0.1:%d", 40000 + i );
+            in.far_relay_ids[i] = next_relay_id( relay_name );
+            next_address_parse( &in.far_relay_addresses[i], relay_address );
         }
         in.update_type = NEXT_UPDATE_TYPE_DIRECT;
         uint64_t in_sequence = 1000;
@@ -10877,11 +11217,17 @@ static void test_packets()
         check( in_sequence == out_sequence + 1 );
         check( in.fallback_to_direct_sequence == out.fallback_to_direct_sequence );
         check( in.sequence == out.sequence );
-        check( in.num_relays == out.num_relays );
-        for ( int i = 0; i < NEXT_MAX_NEAR_RELAYS; ++i )
+        check( in.num_near_relays == out.num_near_relays );
+        for ( int i = 0; i < NEXT_MAX_RELAYS; ++i )
         {
-            check( in.relay_ids[i] == out.relay_ids[i] );
-            check( next_address_equal( &in.relay_addresses[i], &out.relay_addresses[i] ) );
+            check( in.near_relay_ids[i] == out.near_relay_ids[i] );
+            check( next_address_equal( &in.near_relay_addresses[i], &out.near_relay_addresses[i] ) );
+        }
+        check( in.num_far_relays == out.num_far_relays );
+        for ( int i = 0; i < NEXT_MAX_RELAYS; ++i )
+        {
+            check( in.far_relay_ids[i] == out.far_relay_ids[i] );
+            check( next_address_equal( &in.far_relay_addresses[i], &out.far_relay_addresses[i] ) );
         }
         check( in.update_type == out.update_type );
     }
@@ -10891,15 +11237,15 @@ static void test_packets()
         NextRouteUpdatePacket in, out;
         in.fallback_to_direct_sequence = 100;
         in.sequence = 100000;
-        in.num_relays = NEXT_MAX_NEAR_RELAYS;
-        for ( int i = 0; i < NEXT_MAX_NEAR_RELAYS; ++i )
+        in.num_near_relays = NEXT_MAX_RELAYS;
+        for ( int i = 0; i < NEXT_MAX_RELAYS; ++i )
         {
             char relay_name[32];
             char relay_address[256];
             sprintf( relay_name, "relay%d", i );
             sprintf( relay_address, "127.0.0.1:%d", 40000 + i );
-            in.relay_ids[i] = next_relay_id( relay_name );
-            next_address_parse( &in.relay_addresses[i], relay_address );
+            in.near_relay_ids[i] = next_relay_id( relay_name );
+            next_address_parse( &in.near_relay_addresses[i], relay_address );
         }
         in.update_type = NEXT_UPDATE_TYPE_ROUTE;
         in.num_tokens = NEXT_MAX_TOKENS;
@@ -10914,11 +11260,17 @@ static void test_packets()
         check( in_sequence == out_sequence + 1 );
         check( in.fallback_to_direct_sequence == out.fallback_to_direct_sequence );
         check( in.sequence == out.sequence );
-        check( in.num_relays == out.num_relays );
-        for ( int i = 0; i < NEXT_MAX_NEAR_RELAYS; ++i )
+        check( in.num_near_relays == out.num_near_relays );
+        for ( int i = 0; i < NEXT_MAX_RELAYS; ++i )
         {
-            check( in.relay_ids[i] == out.relay_ids[i] );
-            check( next_address_equal( &in.relay_addresses[i], &out.relay_addresses[i] ) );
+            check( in.near_relay_ids[i] == out.near_relay_ids[i] );
+            check( next_address_equal( &in.near_relay_addresses[i], &out.near_relay_addresses[i] ) );
+        }
+        check( in.num_far_relays == out.num_far_relays );
+        for ( int i = 0; i < NEXT_MAX_RELAYS; ++i )
+        {
+            check( in.far_relay_ids[i] == out.far_relay_ids[i] );
+            check( next_address_equal( &in.far_relay_addresses[i], &out.far_relay_addresses[i] ) );
         }
         check( in.update_type == out.update_type );
         check( in.num_tokens == out.num_tokens );
@@ -10930,15 +11282,15 @@ static void test_packets()
         NextRouteUpdatePacket in, out;
         in.fallback_to_direct_sequence = 100;
         in.sequence = 100000;
-        in.num_relays = NEXT_MAX_NEAR_RELAYS;
-        for ( int i = 0; i < NEXT_MAX_NEAR_RELAYS; ++i )
+        in.num_near_relays = NEXT_MAX_RELAYS;
+        for ( int i = 0; i < NEXT_MAX_RELAYS; ++i )
         {
             char relay_name[32];
             char relay_address[256];
             sprintf( relay_name, "relay%d", i );
             sprintf( relay_address, "127.0.0.1:%d", 40000 + i );
-            in.relay_ids[i] = next_relay_id( relay_name );
-            next_address_parse( &in.relay_addresses[i], relay_address );
+            in.near_relay_ids[i] = next_relay_id( relay_name );
+            next_address_parse( &in.near_relay_addresses[i], relay_address );
         }
         in.update_type = NEXT_UPDATE_TYPE_CONTINUE;
         in.num_tokens = NEXT_MAX_TOKENS;
@@ -10953,11 +11305,17 @@ static void test_packets()
         check( in_sequence == out_sequence + 1 );
         check( in.fallback_to_direct_sequence == out.fallback_to_direct_sequence );
         check( in.sequence == out.sequence );
-        check( in.num_relays == out.num_relays );
-        for ( int i = 0; i < NEXT_MAX_NEAR_RELAYS; ++i )
+        check( in.num_near_relays == out.num_near_relays );
+        for ( int i = 0; i < NEXT_MAX_RELAYS; ++i )
         {
-            check( in.relay_ids[i] == out.relay_ids[i] );
-            check( next_address_equal( &in.relay_addresses[i], &out.relay_addresses[i] ) );
+            check( in.near_relay_ids[i] == out.near_relay_ids[i] );
+            check( next_address_equal( &in.near_relay_addresses[i], &out.near_relay_addresses[i] ) );
+        }
+        check( in.num_far_relays == out.num_far_relays );
+        for ( int i = 0; i < NEXT_MAX_RELAYS; ++i )
+        {
+            check( in.far_relay_ids[i] == out.far_relay_ids[i] );
+            check( next_address_equal( &in.far_relay_addresses[i], &out.far_relay_addresses[i] ) );
         }
         check( in.update_type == out.update_type );
         check( in.num_tokens == out.num_tokens );
@@ -11010,7 +11368,7 @@ static void test_pending_session_manager()
 {
     const int InitialSize = 32;
 
-    next_pending_session_manager_t * pending_session_manager = next_pending_session_manager_create( InitialSize );
+    next_pending_session_manager_t * pending_session_manager = next_pending_session_manager_create( NULL, InitialSize );
 
     check( pending_session_manager );
 
@@ -11131,7 +11489,7 @@ static void test_proxy_session_manager()
 {
     const int InitialSize = 32;
 
-    next_proxy_session_manager_t * proxy_session_manager = next_proxy_session_manager_create( InitialSize );
+    next_proxy_session_manager_t * proxy_session_manager = next_proxy_session_manager_create( NULL, InitialSize );
 
     check( proxy_session_manager );
 
@@ -11240,7 +11598,7 @@ static void test_session_manager()
 {
     const int InitialSize = 32;
 
-    next_session_manager_t * session_manager = next_session_manager_create( InitialSize );
+    next_session_manager_t * session_manager = next_session_manager_create( NULL, InitialSize );
 
     check( session_manager );
 
@@ -11405,8 +11763,8 @@ static void test_backend_packets()
         in.next_rtt = 5.0f;
         in.next_jitter = 1.5f;
         in.next_packet_loss = 0.0f;
-        in.num_near_relays = NEXT_MAX_NEAR_RELAYS;
-        for ( int i = 0; i < NEXT_MAX_NEAR_RELAYS; ++i )
+        in.num_near_relays = NEXT_MAX_RELAYS;
+        for ( int i = 0; i < NEXT_MAX_RELAYS; ++i )
         {
             in.near_relay_ids[i] = i;
             in.near_relay_rtt[i] = i + 10.0f;
@@ -11438,7 +11796,7 @@ static void test_backend_packets()
         check( in.next_jitter == out.next_jitter );
         check( in.next_packet_loss == out.next_packet_loss );
         check( in.num_near_relays == out.num_near_relays );
-        for ( int i = 0; i < NEXT_MAX_NEAR_RELAYS; ++i )
+        for ( int i = 0; i < NEXT_MAX_RELAYS; ++i )
         {
             check( in.near_relay_ids[i] == out.near_relay_ids[i] );
             check( in.near_relay_rtt[i] == out.near_relay_rtt[i] );
@@ -11460,15 +11818,25 @@ static void test_backend_packets()
         NextBackendSessionResponsePacket in, out;
         in.sequence = 10000;
         in.session_id = 1234342431431LL;
-        in.num_relays = NEXT_MAX_NEAR_RELAYS;
-        for ( int i = 0; i < NEXT_MAX_NEAR_RELAYS; ++i )
+        in.num_near_relays = NEXT_MAX_RELAYS;
+        for ( int i = 0; i < NEXT_MAX_RELAYS; ++i )
         {
             char relay_name[32];
             char relay_address[256];
             sprintf( relay_name, "relay%d", i );
             sprintf( relay_address, "127.0.0.1:%d", 40000 + i );
-            in.relay_ids[i] = next_relay_id( relay_name );
-            next_address_parse( &in.relay_addresses[i], relay_address );
+            in.near_relay_ids[i] = next_relay_id( relay_name );
+            next_address_parse( &in.near_relay_addresses[i], relay_address );
+        }
+        in.num_far_relays = NEXT_MAX_RELAYS;
+        for ( int i = 0; i < NEXT_MAX_RELAYS; ++i )
+        {
+            char relay_name[32];
+            char relay_address[256];
+            sprintf( relay_name, "relay%d", i );
+            sprintf( relay_address, "127.0.0.1:%d", 40000 + i );
+            in.far_relay_ids[i] = next_relay_id( relay_name );
+            next_address_parse( &in.far_relay_addresses[i], relay_address );
         }
         in.response_type = NEXT_UPDATE_TYPE_DIRECT;
         next_random_bytes( in.server_route_public_key, sizeof(in.server_route_public_key) );
@@ -11480,11 +11848,17 @@ static void test_backend_packets()
 
         check( in.sequence == out.sequence );
         check( in.session_id == out.session_id );
-        check( in.num_relays == out.num_relays );
-        for ( int i = 0; i < NEXT_MAX_NEAR_RELAYS; ++i )
+        check( in.num_near_relays == out.num_near_relays );
+        for ( int i = 0; i < NEXT_MAX_RELAYS; ++i )
         {
-            check( in.relay_ids[i] == out.relay_ids[i] );
-            check( next_address_equal( &in.relay_addresses[i], &out.relay_addresses[i] ) );
+            check( in.near_relay_ids[i] == out.near_relay_ids[i] );
+            check( next_address_equal( &in.near_relay_addresses[i], &out.near_relay_addresses[i] ) );
+        }
+        check( in.num_far_relays == out.num_far_relays );
+        for ( int i = 0; i < NEXT_MAX_RELAYS; ++i )
+        {
+            check( in.far_relay_ids[i] == out.far_relay_ids[i] );
+            check( next_address_equal( &in.far_relay_addresses[i], &out.far_relay_addresses[i] ) );
         }
         check( in.response_type == out.response_type );
         check( memcmp( in.server_route_public_key, out.server_route_public_key, sizeof(in.server_route_public_key) ) == 0 );
@@ -11500,15 +11874,15 @@ static void test_backend_packets()
         NextBackendSessionResponsePacket in, out;
         in.sequence = 10000;
         in.session_id = 1234342431431LL;
-        in.num_relays = NEXT_MAX_NEAR_RELAYS;
-        for ( int i = 0; i < NEXT_MAX_NEAR_RELAYS; ++i )
+        in.num_near_relays = NEXT_MAX_RELAYS;
+        for ( int i = 0; i < NEXT_MAX_RELAYS; ++i )
         {
             char relay_name[32];
             char relay_address[256];
             sprintf( relay_name, "relay%d", i );
             sprintf( relay_address, "127.0.0.1:%d", 40000 + i );
-            in.relay_ids[i] = next_relay_id( relay_name );
-            next_address_parse( &in.relay_addresses[i], relay_address );
+            in.near_relay_ids[i] = next_relay_id( relay_name );
+            next_address_parse( &in.near_relay_addresses[i], relay_address );
         }
         in.response_type = NEXT_UPDATE_TYPE_ROUTE;
         in.multipath = true;
@@ -11523,11 +11897,17 @@ static void test_backend_packets()
 
         check( in.sequence == out.sequence );
         check( in.session_id == out.session_id );
-        check( in.num_relays == out.num_relays );
-        for ( int i = 0; i < NEXT_MAX_NEAR_RELAYS; ++i )
+        check( in.num_near_relays == out.num_near_relays );
+        for ( int i = 0; i < NEXT_MAX_RELAYS; ++i )
         {
-            check( in.relay_ids[i] == out.relay_ids[i] );
-            check( next_address_equal( &in.relay_addresses[i], &out.relay_addresses[i] ) );
+            check( in.near_relay_ids[i] == out.near_relay_ids[i] );
+            check( next_address_equal( &in.near_relay_addresses[i], &out.near_relay_addresses[i] ) );
+        }
+        check( in.num_far_relays == out.num_far_relays );
+        for ( int i = 0; i < NEXT_MAX_RELAYS; ++i )
+        {
+            check( in.far_relay_ids[i] == out.far_relay_ids[i] );
+            check( next_address_equal( &in.far_relay_addresses[i], &out.far_relay_addresses[i] ) );
         }
         check( in.response_type == out.response_type );
         check( in.multipath == out.multipath );
@@ -11546,15 +11926,25 @@ static void test_backend_packets()
         NextBackendSessionResponsePacket in, out;
         in.sequence = 10000;
         in.session_id = 1234342431431LL;
-        in.num_relays = NEXT_MAX_NEAR_RELAYS;
-        for ( int i = 0; i < NEXT_MAX_NEAR_RELAYS; ++i )
+        in.num_near_relays = NEXT_MAX_RELAYS;
+        for ( int i = 0; i < NEXT_MAX_RELAYS; ++i )
         {
             char relay_name[32];
             char relay_address[256];
             sprintf( relay_name, "relay%d", i );
             sprintf( relay_address, "127.0.0.1:%d", 40000 + i );
-            in.relay_ids[i] = next_relay_id( relay_name );
-            next_address_parse( &in.relay_addresses[i], relay_address );
+            in.near_relay_ids[i] = next_relay_id( relay_name );
+            next_address_parse( &in.near_relay_addresses[i], relay_address );
+        }
+        in.num_far_relays = NEXT_MAX_RELAYS;
+        for ( int i = 0; i < NEXT_MAX_RELAYS; ++i )
+        {
+            char relay_name[32];
+            char relay_address[256];
+            sprintf( relay_name, "relay%d", i );
+            sprintf( relay_address, "127.0.0.1:%d", 40000 + i );
+            in.far_relay_ids[i] = next_relay_id( relay_name );
+            next_address_parse( &in.far_relay_addresses[i], relay_address );
         }
         in.response_type = NEXT_UPDATE_TYPE_CONTINUE;
         in.multipath = true;
@@ -11570,11 +11960,17 @@ static void test_backend_packets()
         check( in.sequence == out.sequence );
         check( in.session_id == out.session_id );
         check( in.multipath == out.multipath );
-        check( in.num_relays == out.num_relays );
-        for ( int i = 0; i < NEXT_MAX_NEAR_RELAYS; ++i )
+        check( in.num_near_relays == out.num_near_relays );
+        for ( int i = 0; i < NEXT_MAX_RELAYS; ++i )
         {
-            check( in.relay_ids[i] == out.relay_ids[i] );
-            check( next_address_equal( &in.relay_addresses[i], &out.relay_addresses[i] ) );
+            check( in.near_relay_ids[i] == out.near_relay_ids[i] );
+            check( next_address_equal( &in.near_relay_addresses[i], &out.near_relay_addresses[i] ) );
+        }
+        check( in.num_far_relays == out.num_far_relays );
+        for ( int i = 0; i < NEXT_MAX_RELAYS; ++i )
+        {
+            check( in.far_relay_ids[i] == out.far_relay_ids[i] );
+            check( next_address_equal( &in.far_relay_addresses[i], &out.far_relay_addresses[i] ) );
         }
         check( in.response_type == out.response_type );
         check( in.num_tokens == out.num_tokens );
@@ -11584,7 +11980,7 @@ static void test_backend_packets()
     }
 }
 
-static void test_near_relay_manager()
+static void test_relay_manager()
 {
     const int NumRelays = 64;
 
@@ -11599,67 +11995,67 @@ static void test_near_relay_manager()
         next_address_parse( &relay_addresses[i], address_string );
     }
 
-    next_near_relay_manager_t * manager = next_near_relay_manager_create();
+    next_relay_manager_t * manager = next_relay_manager_create( NULL );
 
-    // should be no near relays when manager is first created
+    // should be no relays when manager is first created
     {
-        next_near_relay_stats_t stats;
-        next_near_relay_manager_get_stats( manager, &stats );
-        check( stats.num_near_relays == 0 );
+        next_relay_stats_t stats;
+        next_relay_manager_get_stats( manager, &stats );
+        check( stats.num_relays == 0 );
     }
 
     // add max relays
     
-    next_near_relay_manager_update( manager, NEXT_MAX_NEAR_RELAYS, relay_ids, relay_addresses );
+    next_relay_manager_update( manager, NEXT_MAX_RELAYS, relay_ids, relay_addresses );
     {
-        next_near_relay_stats_t stats;
-        next_near_relay_manager_get_stats( manager, &stats );
-        check( stats.num_near_relays == NEXT_MAX_NEAR_RELAYS );
-        for ( int i = 0; i < NEXT_MAX_NEAR_RELAYS; ++i )
+        next_relay_stats_t stats;
+        next_relay_manager_get_stats( manager, &stats );
+        check( stats.num_relays == NEXT_MAX_RELAYS );
+        for ( int i = 0; i < NEXT_MAX_RELAYS; ++i )
         {
-            check( relay_ids[i] == stats.near_relay_ids[i] );
+            check( relay_ids[i] == stats.relay_ids[i] );
         }
     }
 
     // remove all relays
 
-    next_near_relay_manager_update( manager, 0, relay_ids, relay_addresses );
+    next_relay_manager_update( manager, 0, relay_ids, relay_addresses );
     {
-        next_near_relay_stats_t stats;
-        next_near_relay_manager_get_stats( manager, &stats );
-        check( stats.num_near_relays == 0 );
+        next_relay_stats_t stats;
+        next_relay_manager_get_stats( manager, &stats );
+        check( stats.num_relays == 0 );
     }
 
     // add same relay set repeatedly
 
     for ( int j = 0; j < 2; ++j )
     {
-        next_near_relay_manager_update( manager, NEXT_MAX_NEAR_RELAYS, relay_ids, relay_addresses );
+        next_relay_manager_update( manager, NEXT_MAX_RELAYS, relay_ids, relay_addresses );
         {
-            next_near_relay_stats_t stats;
-            next_near_relay_manager_get_stats( manager, &stats );
-            check( stats.num_near_relays == NEXT_MAX_NEAR_RELAYS );
-            for ( int i = 0; i < NEXT_MAX_NEAR_RELAYS; ++i )
+            next_relay_stats_t stats;
+            next_relay_manager_get_stats( manager, &stats );
+            check( stats.num_relays == NEXT_MAX_RELAYS );
+            for ( int i = 0; i < NEXT_MAX_RELAYS; ++i )
             {
-                check( relay_ids[i] == stats.near_relay_ids[i] );
+                check( relay_ids[i] == stats.relay_ids[i] );
             }
         }
     }
     
     // now add a few new relays, while some relays remain the same
 
-    next_near_relay_manager_update( manager, NEXT_MAX_NEAR_RELAYS, relay_ids + 4, relay_addresses + 4);
+    next_relay_manager_update( manager, NEXT_MAX_RELAYS, relay_ids + 4, relay_addresses + 4);
     {
-        next_near_relay_stats_t stats;
-        next_near_relay_manager_get_stats( manager, &stats );
-        check( stats.num_near_relays == NEXT_MAX_NEAR_RELAYS );
-        for ( int i = 0; i < NEXT_MAX_NEAR_RELAYS; ++i )
+        next_relay_stats_t stats;
+        next_relay_manager_get_stats( manager, &stats );
+        check( stats.num_relays == NEXT_MAX_RELAYS );
+        for ( int i = 0; i < NEXT_MAX_RELAYS; ++i )
         {
-            check( relay_ids[i+4] == stats.near_relay_ids[i] );
+            check( relay_ids[i+4] == stats.relay_ids[i] );
         }
     }
 
-    next_near_relay_manager_destroy( manager );
+    next_relay_manager_destroy( manager );
 }
 
 static void test_route_token()
@@ -11981,7 +12377,7 @@ void next_test()
     RUN_TEST( test_proxy_session_manager );
     RUN_TEST( test_session_manager );
     RUN_TEST( test_backend_packets );
-    RUN_TEST( test_near_relay_manager );
+    RUN_TEST( test_relay_manager );
     RUN_TEST( test_route_token );
     RUN_TEST( test_continue_token );
     RUN_TEST( test_header );
@@ -11989,4 +12385,4 @@ void next_test()
     RUN_TEST( test_bandwidth_limiter );
 }
 
-// ---------------------------------------------------------------
+NEXT_PACK_POP()

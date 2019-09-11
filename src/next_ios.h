@@ -1,5 +1,5 @@
 /*
-    Network Next SDK v3.1.0
+    Network Next SDK 3.2.2
 
     Copyright © 2017 - 2019 Network Next, Inc.
 
@@ -24,6 +24,9 @@
 
 #include "next.h"
 
+#ifndef NEXT_IOS_H
+#define NEXT_IOS_H
+
 #if NEXT_PLATFORM == NEXT_PLATFORM_IOS
 
 #include <pthread.h>
@@ -33,12 +36,15 @@
 #define NEXT_PLATFORM_SOCKET_NON_BLOCKING       0
 #define NEXT_PLATFORM_SOCKET_BLOCKING           1
 
+NEXT_PACK_PUSH()
+
 // -------------------------------------
 
 typedef int next_platform_socket_handle_t;
 
 struct next_platform_socket_t
 {
+    void * context;
     next_platform_socket_handle_t handle;
 };
 
@@ -46,6 +52,7 @@ struct next_platform_socket_t
 
 struct next_platform_thread_t
 {
+    void * context;
     pthread_t handle;
 };
 
@@ -61,9 +68,14 @@ typedef next_platform_thread_return_t (NEXT_PLATFORM_THREAD_FUNC next_platform_t
 
 struct next_platform_mutex_t
 {
+    void * context;
     pthread_mutex_t handle;
 };
 
 // -------------------------------------
 
+NEXT_PACK_POP()
+
 #endif // #if NEXT_PLATFORM == NEXT_PLATFORM_IOS
+
+#endif // #ifndef NEXT_IOS_H
