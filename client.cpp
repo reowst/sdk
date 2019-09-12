@@ -1,5 +1,5 @@
 /*
-    Network Next SDK 3.2.2
+    Network Next SDK 3.2.3
 
     Copyright © 2017 - 2019 Network Next, Inc.
 
@@ -58,7 +58,7 @@ int main()
         return 1;
     }
 
-    next_client_open_session( client, "127.0.0.1:32202" );
+    next_client_open_session( client, "3.130.16.45:32202" );//127.0.0.1:32202" );
 
     uint8_t packet_data[32];
     memset( packet_data, 0, sizeof( packet_data ) );
