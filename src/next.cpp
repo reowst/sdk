@@ -1,5 +1,5 @@
 /*
-    Network Next SDK 3.2.2
+    Network Next SDK 3.2.3
 
     Copyright © 2017 - 2019 Network Next, Inc.
 
@@ -38,8 +38,8 @@
 #define NEXT_ADDRESS_BUFFER_SAFETY                                     32
 #define NEXT_REPLAY_PROTECTION_BUFFER_SIZE                            256
 #define NEXT_PING_HISTORY_ENTRY_COUNT                                1024
-#define NEXT_SOCKET_SNDBUF_SIZE                                   1024000
-#define NEXT_SOCKET_RCVBUF_SIZE                                   1024000
+#define NEXT_SOCKET_SEND_BUFFER_SIZE                               131072
+#define NEXT_SOCKET_RECEIVE_BUFFER_SIZE                            131072
 #define NEXT_CLIENT_STATS_WINDOW                                     10.0
 #define NEXT_PING_SAFETY                                              1.0
 #define NEXT_UPGRADE_TIMEOUT                                         10.0
@@ -55,7 +55,7 @@
 #define NEXT_SECONDS_BETWEEN_SESSION_UPDATES                           10
 #define NEXT_UPGRADE_TOKEN_BYTES                                      128
 #define NEXT_MAX_RELAYS                                                10
-#define NEXT_RELAY_PING_TIME                                          0.1
+#define NEXT_RELAY_PING_TIME                                          1.0
 #define NEXT_ROUTE_TOKEN_BYTES                                         77
 #define NEXT_ENCRYPTED_ROUTE_TOKEN_BYTES                              117
 #define NEXT_CONTINUE_TOKEN_BYTES                                      18
@@ -83,7 +83,7 @@
 #if 1
 #define NEXT_VERSION_MAJOR_INT                      3
 #define NEXT_VERSION_MINOR_INT                      2
-#define NEXT_VERSION_PATCH_INT                      2
+#define NEXT_VERSION_PATCH_INT                      3
 #else
 #define NEXT_VERSION_MAJOR_INT                                          0
 #define NEXT_VERSION_MINOR_INT                                          0
@@ -271,6 +271,8 @@ extern void next_platform_socket_destroy( next_platform_socket_t * socket );
 extern void next_platform_socket_send_packet( next_platform_socket_t * socket, const next_address_t * to, const void * packet_data, int packet_bytes );
 
 extern int next_platform_socket_receive_packet( next_platform_socket_t * socket, next_address_t * from, void * packet_data, int max_packet_size );
+
+extern int next_platform_id();
 
 extern int next_platform_connection_type();
 
@@ -3570,7 +3572,7 @@ void next_relay_manager_update( next_relay_manager_t * manager, int num_relays, 
         if ( !found[i] )
         {
             new_relay_ids[index] = relay_ids[i];
-            new_relay_last_ping_time[index] = -1000.0;
+            new_relay_last_ping_time[index] = -10000.0;
             new_relay_addresses[index] = relay_addresses[i];
             new_relay_ping_history[index] = NULL;
             for ( int j = 0; j < NEXT_MAX_RELAYS; ++j )
@@ -3595,6 +3597,18 @@ void next_relay_manager_update( next_relay_manager_t * manager, int num_relays, 
     memcpy( manager->relay_last_ping_time, new_relay_last_ping_time, 8 * index );
     memcpy( manager->relay_addresses, new_relay_addresses, sizeof(next_address_t) * index );
     memcpy( manager->relay_ping_history, new_relay_ping_history, sizeof(next_ping_history_t*) * index );
+
+    // make sure all ping times are evenly distributed to avoid clusters of ping packets
+
+    double current_time = next_time();
+
+    if ( manager->num_relays > 1 )
+    {
+        for ( int i = 0; i < manager->num_relays; ++i )
+        {
+            manager->relay_last_ping_time[i] = current_time - NEXT_RELAY_PING_TIME + i * NEXT_RELAY_PING_TIME / ( manager->num_relays - 1 );
+        }
+    }
 
 #ifndef NDEBUG
 
@@ -4848,7 +4862,7 @@ next_client_internal_t * next_client_internal_create( void * context, const char
     bind_address.type = NEXT_ADDRESS_IPV4;
     bind_address.port = 0;
 
-    client->socket = next_platform_socket_create( client->context, &bind_address, NEXT_PLATFORM_SOCKET_BLOCKING, 0.1f, NEXT_SOCKET_SNDBUF_SIZE, NEXT_SOCKET_RCVBUF_SIZE );
+    client->socket = next_platform_socket_create( client->context, &bind_address, NEXT_PLATFORM_SOCKET_BLOCKING, 0.1f, NEXT_SOCKET_SEND_BUFFER_SIZE, NEXT_SOCKET_RECEIVE_BUFFER_SIZE );
     if ( client->socket == NULL )
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "client could not create socket" );
@@ -5527,6 +5541,8 @@ void next_client_internal_update_stats( next_client_internal_t * client )
 
     if ( client->last_stats_update_time + ( 1.0 / NEXT_CLIENT_STATS_UPDATES_PER_SECOND ) < current_time )
     {
+        client->client_stats.platform_id = next_platform_id();
+
         client->client_stats.connection_type = next_platform_connection_type();
 
         next_route_stats_t next_route_stats;
@@ -7787,7 +7803,28 @@ next_server_internal_t * next_server_internal_create( void * context, const char
         return NULL;
     }
 
-    server->socket = next_platform_socket_create( server->context, &bind_address, NEXT_PLATFORM_SOCKET_BLOCKING, 0.1f, NEXT_SOCKET_SNDBUF_SIZE, NEXT_SOCKET_RCVBUF_SIZE );
+    int socket_send_buffer_size = NEXT_SOCKET_SEND_BUFFER_SIZE;
+    int socket_receive_buffer_size = NEXT_SOCKET_RECEIVE_BUFFER_SIZE;
+    const char * socket_send_buffer_size_env = next_platform_getenv( "NEXT_SOCKET_SEND_BUFFER_SIZE" );
+    const char * socket_receive_buffer_size_env = next_platform_getenv( "NEXT_SOCKET_RECEIVE_BUFFER_SIZE" );
+    if ( socket_send_buffer_size_env != NULL )
+    {
+        int value = atoi( socket_send_buffer_size_env );
+        if ( value > 0 )
+        {
+            socket_send_buffer_size = value;
+        }
+    }
+    if ( socket_receive_buffer_size_env != NULL )
+    {
+        int value = atoi( socket_receive_buffer_size_env );
+        if ( value > 0 )
+        {
+            socket_receive_buffer_size = value;
+        }
+    }
+
+    server->socket = next_platform_socket_create( server->context, &bind_address, NEXT_PLATFORM_SOCKET_BLOCKING, 0.1f, socket_send_buffer_size, socket_receive_buffer_size );
     if ( server->socket == NULL )
     {
         next_printf( NEXT_LOG_LEVEL_ERROR, "server could not create server socket" );

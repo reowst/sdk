@@ -1,5 +1,5 @@
 /*
-    Network Next SDK 3.2.2
+    Network Next SDK 3.2.3
 
     Copyright © 2017 - 2019 Network Next, Inc.
 
@@ -189,6 +189,11 @@ int next_platform_hostname_resolve( const char * hostname, const char * port, ne
 int next_platform_connection_type()
 {
     return connection_type;
+}
+
+int next_platform_id()
+{
+    return NEXT_PLATFORM_MAC;
 }
 
 // ---------------------------------------------------

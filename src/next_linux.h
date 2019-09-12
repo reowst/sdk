@@ -1,5 +1,5 @@
 /*
-    Network Next SDK 3.2.2
+    Network Next SDK 3.2.3
 
     Copyright © 2017 - 2019 Network Next, Inc.
 
