@@ -1,5 +1,5 @@
 /*
-    Network Next SDK 3.2.3
+    Network Next SDK 3.3.0
 
     Copyright © 2017 - 2019 Network Next, Inc.
 
@@ -44,6 +44,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
+#include <alloca.h>
 
 NEXT_PACK_PUSH()
 
@@ -398,6 +399,57 @@ void next_platform_socket_send_packet( next_platform_socket_t * socket, const ne
     }
 }
 
+void next_platform_socket_send_packets( next_platform_socket_t * socket, const next_address_t * to, void ** packet_data, int * packet_bytes, int num_packets )
+{
+    next_assert( socket );
+    next_assert( to );
+    next_assert( packet_data );
+    next_assert( packet_bytes );
+    next_assert( num_packets >= 0 );
+
+    if ( num_packets == 0 )
+        return;
+
+    iovec * msg = (iovec*) alloca( sizeof(iovec) * num_packets );
+
+    for ( int i = 0; i < num_packets; ++i )
+    {
+        msg[i].iov_base = packet_data[i];
+        msg[i].iov_len = packet_bytes[i];
+    }
+
+    sockaddr_in * socket_address = (sockaddr_in*) alloca( sizeof(sockaddr_in) * num_packets );
+
+    for ( int i = 0; i < num_packets; ++i )
+    {
+        next_assert( to[i].type == NEXT_ADDRESS_IPV4 );                 // note: ipv6 not supported
+        memset( &socket_address[i], 0, sizeof(sockaddr_in) );
+        socket_address[i].sin_family = AF_INET;
+        socket_address[i].sin_addr.s_addr = ( ( (uint32_t) to[i].data.ipv4[0] ) )        | 
+                                            ( ( (uint32_t) to[i].data.ipv4[1] ) << 8 )   | 
+                                            ( ( (uint32_t) to[i].data.ipv4[2] ) << 16 )  | 
+                                            ( ( (uint32_t) to[i].data.ipv4[3] ) << 24 );
+        socket_address[i].sin_port = next_platform_htons( to->port );
+    }
+
+    mmsghdr * packet_array = (mmsghdr*) alloca( sizeof(mmsghdr) * num_packets );
+
+    for ( int i = 0; i < num_packets; ++i )
+    {
+        packet_array[i].msg_hdr.msg_name = &socket_address[i];
+        packet_array[i].msg_hdr.msg_namelen = sizeof(sockaddr_in);
+        packet_array[i].msg_hdr.msg_iov = &msg[i];
+        packet_array[i].msg_hdr.msg_iovlen = 1;
+    }
+
+    int result = sendmmsg( socket->handle, packet_array, num_packets, 0 );
+    
+    if ( result == -1 )
+    {
+        next_printf( NEXT_LOG_LEVEL_ERROR, "sendmmsg failed to send packets" );
+    }
+}
+
 int next_platform_socket_receive_packet( next_platform_socket_t * socket, next_address_t * from, void * packet_data, int max_packet_size )
 {
     next_assert( socket );
@@ -453,6 +505,76 @@ int next_platform_socket_receive_packet( next_platform_socket_t * socket, next_a
     return result;
 }
 
+void next_platform_socket_receive_packets( next_platform_socket_t * socket, int max_packets, int max_packet_bytes, next_address_t * from, void ** packet_data, int * packet_bytes, int * num_packets )
+{
+    next_assert( socket );
+    next_assert( max_packets >= 1 );
+    next_assert( max_packet_bytes > 0 );
+    next_assert( from );
+    next_assert( packet_data );
+    next_assert( packet_bytes );
+    next_assert( num_packets );
+
+    (void) socket;
+    (void) max_packets;
+    (void) max_packet_bytes;
+    (void) from;
+    (void) packet_data;
+    (void) packet_bytes;
+    (void) num_packets;
+
+    // todo
+    
+/*
+#define VLEN 10
+#define BUFSIZE 200
+#define TIMEOUT 1
+    int sockfd, retval, i;
+    struct sockaddr_in sa;
+    struct mmsghdr msgs[VLEN];
+    struct iovec iovecs[VLEN];
+    char bufs[VLEN][BUFSIZE+1];
+    struct timespec timeout;
+
+   sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd == -1) {
+        perror("socket()");
+        exit(EXIT_FAILURE);
+    }
+
+   sa.sin_family = AF_INET;
+    sa.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    sa.sin_port = htons(1234);
+    if (bind(sockfd, (struct sockaddr *) &sa, sizeof(sa)) == -1) {
+        perror("bind()");
+        exit(EXIT_FAILURE);
+    }
+
+   memset(msgs, 0, sizeof(msgs));
+    for (i = 0; i < VLEN; i++) {
+        iovecs[i].iov_base         = bufs[i];
+        iovecs[i].iov_len          = BUFSIZE;
+        msgs[i].msg_hdr.msg_iov    = &iovecs[i];
+        msgs[i].msg_hdr.msg_iovlen = 1;
+    }
+
+   timeout.tv_sec = TIMEOUT;
+    timeout.tv_nsec = 0;
+
+   retval = recvmmsg(sockfd, msgs, VLEN, 0, &timeout);
+    if (retval == -1) {
+        perror("recvmmsg()");
+        exit(EXIT_FAILURE);
+    }
+
+   printf("%d messages received\n", retval);
+    for (i = 0; i < retval; i++) {
+        bufs[i][msgs[i].msg_len] = 0;
+        printf("%d %s", i+1, bufs[i]);
+    }
+*/    
+}
+
 // ---------------------------------------------------
 
 next_platform_thread_t * next_platform_thread_create( void * context, next_platform_thread_func_t * thread_function, void * arg )
@@ -482,6 +604,16 @@ void next_platform_thread_destroy( next_platform_thread_t * thread )
 {
     next_assert( thread );
     next_free( thread->context, thread );
+}
+
+void next_platform_thread_set_sched_max( next_platform_thread_t * thread )
+{
+    struct sched_param param;
+    param.sched_priority = sched_get_priority_max( SCHED_FIFO );
+    int ret = pthread_setschedparam( thread->handle, SCHED_FIFO, &param );
+    if (ret) {
+        next_printf( NEXT_LOG_LEVEL_INFO, "unable to increase server thread priority: %s", strerror(ret) );
+    }
 }
 
 // ---------------------------------------------------

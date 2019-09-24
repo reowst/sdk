@@ -1,5 +1,5 @@
 /*
-    Network Next SDK 3.2.3
+    Network Next SDK 3.3.0
 
     Copyright © 2017 - 2019 Network Next, Inc.
 
@@ -28,8 +28,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-static const char * customer_private_key = "";
-
 static volatile int quit = 0;
 
 void interrupt_handler( int signal )
@@ -55,9 +53,9 @@ int main()
 
     signal( SIGINT, interrupt_handler ); signal( SIGTERM, interrupt_handler );
 
-    next_init( NULL ); 
+    next_init( NULL, NULL ); 
     
-    next_server_t * server = next_server_create( NULL, customer_private_key, "127.0.0.1:32202", "0.0.0.0:32202", "local", server_packet_received );
+    next_server_t * server = next_server_create( NULL, "127.0.0.1:32202", "0.0.0.0:32202", "local", server_packet_received );
 
     if ( server == NULL )
     {

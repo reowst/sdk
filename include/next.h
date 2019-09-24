@@ -1,5 +1,5 @@
 /*
-    Network Next SDK 3.2.3
+    Network Next SDK 3.3.0
 
     Copyright © 2017 - 2019 Network Next, Inc.
 
@@ -32,11 +32,11 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define NEXT_VERSION_FULL                                   "3.2.3"
+#define NEXT_VERSION_FULL                                   "3.3.0"
 #define NEXT_VERSION_MAJOR                                      "3"
-#define NEXT_VERSION_MINOR                                      "2"
-#define NEXT_VERSION_PATCH                                      "3"
-#define NEXT_VERSION_GITHUB                             "4353d5d60"
+#define NEXT_VERSION_MINOR                                      "3"
+#define NEXT_VERSION_PATCH                                      "0"
+#define NEXT_VERSION_GITHUB                             "7f7eacf78"
 
 #define NEXT_OK                                                   0
 #define NEXT_ERROR                                               -1
@@ -123,7 +123,20 @@ NEXT_PACK_PUSH()
 
 // -----------------------------------------
 
-NEXT_EXPORT_FUNC int next_init( void * context );
+struct next_config_t
+{
+    char customer_public_key[256];
+    char customer_private_key[256];
+    int socket_send_buffer_size;
+    int socket_receive_buffer_size;
+    bool disable_network_next;
+    bool try_before_you_buy;
+    bool high_priority_server_thread;
+};
+
+NEXT_EXPORT_FUNC void next_default_config( next_config_t * config );
+
+NEXT_EXPORT_FUNC int next_init( void * context, next_config_t * config );
 
 NEXT_EXPORT_FUNC void next_term();
 
@@ -179,11 +192,17 @@ struct next_client_stats_t
 {
     uint64_t platform_id;
     int connection_type;
+    bool try_before_you_buy;
+    bool flagged;
     bool next;
-    float next_rtt;
+    float next_min_rtt;
+    float next_max_rtt;
+    float next_mean_rtt;
     float next_jitter;
     float next_packet_loss;
-    float direct_rtt;
+    float direct_min_rtt;
+    float direct_max_rtt;
+    float direct_mean_rtt;
     float direct_jitter;
     float direct_packet_loss;
     float kbps_up;
@@ -194,7 +213,7 @@ struct next_client_stats_t
 
 struct next_client_t;
 
-NEXT_EXPORT_FUNC next_client_t * next_client_create( void * context, const char * customer_public_key_base64, void (*packet_received_callback)( next_client_t * client, void * context, const uint8_t * packet_data, int packet_bytes ) );
+NEXT_EXPORT_FUNC next_client_t * next_client_create( void * context, void (*packet_received_callback)( next_client_t * client, void * context, const uint8_t * packet_data, int packet_bytes ) );
 
 NEXT_EXPORT_FUNC void next_client_open_session( next_client_t * client, const char * server_address );
 
@@ -206,6 +225,8 @@ NEXT_EXPORT_FUNC void next_client_send_packet( next_client_t * client, const uin
 
 NEXT_EXPORT_FUNC void next_client_send_packet_direct( next_client_t * client, const uint8_t * packet_data, int packet_bytes );
 
+NEXT_EXPORT_FUNC void next_client_flag_session( next_client_t * client );
+
 NEXT_EXPORT_FUNC uint64_t next_client_session_id( next_client_t * client );
 
 NEXT_EXPORT_FUNC const next_client_stats_t * next_client_stats( next_client_t * client );
@@ -216,7 +237,7 @@ NEXT_EXPORT_FUNC void next_client_destroy( next_client_t * client );
 
 struct next_server_t;
 
-NEXT_EXPORT_FUNC next_server_t * next_server_create( void * context, const char * customer_private_key_base64, const char * server_address, const char * bind_address, const char * datacenter, void (*packet_received_callback)( next_server_t * server, void * context, const next_address_t * from, const uint8_t * packet_data, int packet_bytes ) );
+NEXT_EXPORT_FUNC next_server_t * next_server_create( void * context, const char * server_address, const char * bind_address, const char * datacenter, void (*packet_received_callback)( next_server_t * server, void * context, const next_address_t * from, const uint8_t * packet_data, int packet_bytes ) );
 
 NEXT_EXPORT_FUNC uint16_t next_server_port( next_server_t * server );
 

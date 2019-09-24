@@ -1,5 +1,5 @@
 /*
-    Network Next SDK 3.2.3
+    Network Next SDK 3.3.0
 
     Copyright © 2017 - 2019 Network Next, Inc.
 
@@ -31,6 +31,7 @@
 
 #include <pthread.h>
 #include <unistd.h>
+#include <sched.h>
 
 #define NEXT_PLATFORM_HAS_IPV6                  1
 #define NEXT_PLATFORM_SOCKET_NON_BLOCKING       0

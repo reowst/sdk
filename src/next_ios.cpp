@@ -1,5 +1,5 @@
 /*
-    Network Next SDK 3.2.3
+    Network Next SDK 3.3.0
 
     Copyright © 2017 - 2019 Network Next, Inc.
 
@@ -491,6 +491,12 @@ void next_platform_thread_destroy( next_platform_thread_t * thread )
 {
     next_assert( thread );
     next_free( thread->context, thread );
+}
+
+void next_platform_thread_set_sched_max( next_platform_thread_t * thread )
+{
+    // linux only
+    (void)thread;
 }
 
 // ---------------------------------------------------
