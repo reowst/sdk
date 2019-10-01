@@ -1,5 +1,5 @@
 /*
-    Network Next SDK 3.3.0
+    Network Next SDK 3.3.1
 
     Copyright © 2017 - 2019 Network Next, Inc.
 
@@ -81,11 +81,13 @@
 #define NEXT_VERSION_PATCH_MAX                                        254
 #define NEXT_BANDWIDTH_LIMITER_INTERVAL                               1.0
 #define NEXT_TRY_BEFORE_YOU_BUY_MIN_EVAL_TIME                         5.0
+#define NEXT_TRY_BEFORE_YOU_BUY_ABORT_TIME                           25.0
+#define NEXT_DIRECT_ROUTE_EXPIRE_TIME                                30.0
 
 #if 1
 #define NEXT_VERSION_MAJOR_INT                      3
 #define NEXT_VERSION_MINOR_INT                      3
-#define NEXT_VERSION_PATCH_INT                      0
+#define NEXT_VERSION_PATCH_INT                      1
 #else
 #define NEXT_VERSION_MAJOR_INT                                          0
 #define NEXT_VERSION_MINOR_INT                                          0
@@ -95,6 +97,20 @@
 #define NEXT_STATS_ENABLED                                              0
 
 #define NEXT_DIRECT_PACKET_SEQUENCE                                     0
+
+#define NEXT_CLIENT_COUNTER_OPEN_SESSION                                0
+#define NEXT_CLIENT_COUNTER_CLOSE_SESSION                               1
+#define NEXT_CLIENT_COUNTER_UPGRADE_SESSION                             2
+#define NEXT_CLIENT_COUNTER_FALLBACK_TO_DIRECT                          3
+#define NEXT_CLIENT_COUNTER_PACKET_SENT_DIRECT                          4
+#define NEXT_CLIENT_COUNTER_PACKET_RECEIVED_DIRECT                      5
+#define NEXT_CLIENT_COUNTER_PACKET_SENT_NEXT                            6
+#define NEXT_CLIENT_COUNTER_PACKET_RECEIVED_NEXT                        7
+#define NEXT_CLIENT_COUNTER_TRY_BEFORE_YOU_BUY_COMPLETED                8
+#define NEXT_CLIENT_COUNTER_TRY_BEFORE_YOU_BUY_ABORT                    9
+#define NEXT_CLIENT_COUNTER_MULTIPATH                                  10
+
+#define NEXT_CLIENT_COUNTER_MAX                                        64
 
 static const uint8_t next_backend_public_key[] = 
 { 
@@ -2689,7 +2705,6 @@ double next_bandwidth_limiter_usage_kbps( next_bandwidth_limiter_t * bandwidth_l
 #define NEXT_UPGRADE_REQUEST_PACKET                         64
 #define NEXT_UPGRADE_RESPONSE_PACKET                        65
 #define NEXT_UPGRADE_CONFIRM_PACKET                         66
-#define NEXT_DOWNGRADE_PACKET                               67
 #define NEXT_DIRECT_PING_PACKET                             68
 #define NEXT_DIRECT_PONG_PACKET                             69
 #define NEXT_CLIENT_STATS_PACKET                            70
@@ -2870,6 +2885,7 @@ struct NextClientStatsPacket
     bool flagged;
     bool fallback_to_direct;
     bool try_before_you_buy;
+    bool multipath;
     uint64_t platform_id;
     int connection_type;
     float kbps_up;
@@ -2903,6 +2919,7 @@ struct NextClientStatsPacket
         serialize_bool( stream, flagged );
         serialize_bool( stream, fallback_to_direct );
         serialize_bool( stream, try_before_you_buy );
+        serialize_bool( stream, multipath );
         serialize_uint64( stream, platform_id );
         serialize_int( stream, connection_type, NEXT_CONNECTION_TYPE_UNKNOWN, NEXT_CONNECTION_TYPE_CELLULAR );
         serialize_float( stream, kbps_up );
@@ -4459,6 +4476,8 @@ int next_read_header( int direction, uint8_t * type, uint64_t * sequence, uint64
 
 struct next_route_data_t
 {
+    double direct_route_expire_time;
+
     bool current_route;
     double current_route_expire_time;
     uint64_t current_route_session_id;
@@ -4510,6 +4529,7 @@ next_route_manager_t * next_route_manager_create( void * context, next_stats_t *
     memset( route_manager, 0, sizeof(next_route_manager_t) );
     route_manager->context = context;
     route_manager->stats = stats;
+    route_manager->route_data.direct_route_expire_time = next_time() + NEXT_DIRECT_ROUTE_EXPIRE_TIME;
     return route_manager;
 }
 
@@ -4522,6 +4542,7 @@ void next_route_manager_reset( next_route_manager_t * route_manager )
     route_manager->send_sequence = 0;
     route_manager->fallback_to_direct = false;
     memset( &route_manager->route_data, 0, sizeof(next_route_data_t) );
+    route_manager->route_data.direct_route_expire_time = next_time() + NEXT_DIRECT_ROUTE_EXPIRE_TIME;
 }
 
 void next_route_manager_fallback_to_direct( next_route_manager_t * route_manager )
@@ -4565,6 +4586,7 @@ void next_route_manager_direct_route( next_route_manager_t * route_manager, bool
     memcpy( route_manager->route_data.previous_route_private_key, route_manager->route_data.current_route_private_key, crypto_box_SECRETKEYBYTES );
 
     route_manager->route_data.current_route = false;
+    route_manager->route_data.direct_route_expire_time = next_time() + NEXT_DIRECT_ROUTE_EXPIRE_TIME;
 }
 
 void next_route_manager_begin_next_route( next_route_manager_t * route_manager, int num_tokens, uint8_t * tokens, const uint8_t * public_key, const uint8_t * private_key )
@@ -4837,6 +4859,14 @@ void next_route_manager_check_for_timeouts( next_route_manager_t * route_manager
         next_route_manager_fallback_to_direct( route_manager );
         return;
     }
+
+    if ( !route_manager->route_data.current_route && route_manager->route_data.direct_route_expire_time <= current_time )
+    {
+        next_stats( route_manager->stats, "direct route expired" );
+        next_printf( NEXT_LOG_LEVEL_WARN, "client direct route expired" );
+        next_route_manager_fallback_to_direct( route_manager );
+        return;
+    }
 }
 
 bool next_route_manager_send_route_request( next_route_manager_t * route_manager, next_address_t * to, uint8_t * packet_data, int * packet_bytes )
@@ -5092,8 +5122,7 @@ struct next_client_command_flag_session_t : public next_client_command_t
 
 #define NEXT_CLIENT_NOTIFY_PACKET_RECEIVED          0
 #define NEXT_CLIENT_NOTIFY_UPGRADED                 1
-#define NEXT_CLIENT_NOTIFY_DOWNGRADED               2
-#define NEXT_CLIENT_NOTIFY_STATS_UPDATED            3
+#define NEXT_CLIENT_NOTIFY_STATS_UPDATED            2
 
 struct next_client_notify_t
 {
@@ -5139,6 +5168,7 @@ struct next_client_internal_t
     bool flagged;
     bool fallback_to_direct;
     bool try_before_you_buy;
+    bool multipath;
     uint8_t open_session_sequence;
     uint64_t upgrade_sequence;
     uint64_t session_id;
@@ -5172,6 +5202,7 @@ struct next_client_internal_t
     float bandwidth_usage_kbps_down;
     float bandwidth_envelope_kbps_up;
     float bandwidth_envelope_kbps_down;
+    uint64_t counters[NEXT_CLIENT_COUNTER_MAX];
 };
 
 void next_client_internal_destroy( next_client_internal_t * client );
@@ -5398,6 +5429,18 @@ int next_client_internal_process_packet_from_server( next_client_internal_t * cl
                 return NEXT_ERROR;
             }
 
+            if ( next_global_config.disable_network_next )
+            {
+                next_printf( NEXT_LOG_LEVEL_WARN, "client ignored upgrade request packet. network next is disabled" );
+                return NEXT_ERROR;
+            }
+
+            if ( client->fallback_to_direct )
+            {
+                next_printf( NEXT_LOG_LEVEL_WARN, "client ignored upgrade request packet. fallback to direct" );
+                return NEXT_ERROR;
+            }
+
             next_post_validate_packet( packet_data, packet_bytes, &packet, NULL, NULL, NULL, NULL );
 
             next_printf( NEXT_LOG_LEVEL_DEBUG, "client received upgrade request packet" );
@@ -5442,6 +5485,12 @@ int next_client_internal_process_packet_from_server( next_client_internal_t * cl
                 return NEXT_ERROR;
             }
 
+            if ( client->fallback_to_direct )
+            {
+                next_printf( NEXT_LOG_LEVEL_WARN, "client ignored upgrade request packet. fallback to direct" );
+                return NEXT_ERROR;
+            }
+
             if ( memcmp( packet.client_kx_public_key, client->client_kx_public_key, crypto_kx_PUBLICKEYBYTES ) != 0 )
             {
                 next_printf( NEXT_LOG_LEVEL_WARN, "client ignored upgrade confirm packet. client public key does not match" );
@@ -5479,6 +5528,8 @@ int next_client_internal_process_packet_from_server( next_client_internal_t * cl
                 next_mutex_guard( client->notify_mutex );
                 next_queue_push( client->notify_queue, notify );
             }
+
+            client->counters[NEXT_CLIENT_COUNTER_UPGRADE_SESSION]++;
 
             return NEXT_OK;
         }
@@ -5551,6 +5602,18 @@ int next_client_internal_process_packet_from_server( next_client_internal_t * cl
                 next_route_manager_update( client->route_manager, packet.update_type, packet.num_tokens, packet.tokens, next_router_public_key, client->client_route_private_key );
                 fallback_to_direct = client->route_manager->fallback_to_direct;
                 next_platform_mutex_release( client->route_manager_mutex );
+
+                if ( !client->fallback_to_direct && fallback_to_direct )
+                {
+                    client->counters[NEXT_CLIENT_COUNTER_FALLBACK_TO_DIRECT]++;
+                }
+
+                if ( packet.multipath && !client->multipath )
+                {
+                    next_printf( NEXT_LOG_LEVEL_INFO, "client multipath enabled" );
+                    client->multipath = true;
+                    client->counters[NEXT_CLIENT_COUNTER_MULTIPATH]++;
+                }
 
                 client->fallback_to_direct = fallback_to_direct;
                 client->route_update_sequence = packet.sequence;
@@ -5685,6 +5748,8 @@ int next_client_internal_process_network_next_packet( next_client_internal_t * c
                 next_queue_push( client->notify_queue, notify );            
             }
 
+            client->counters[NEXT_CLIENT_COUNTER_PACKET_RECEIVED_NEXT]++;
+
             return NEXT_OK;
         }
         break;
@@ -5751,6 +5816,7 @@ void next_client_internal_block_and_receive_packet( next_client_internal_t * cli
             next_mutex_guard( client->notify_mutex );
             next_queue_push( client->notify_queue, notify );            
         }
+        client->counters[NEXT_CLIENT_COUNTER_PACKET_RECEIVED_DIRECT]++;
     }
 #if NEXT_DIRECT_PACKET_SEQUENCE
     else if ( packet_data[0] == 255 && packet_bytes <= NEXT_MTU + 10 && from_server_address )
@@ -5778,6 +5844,7 @@ void next_client_internal_block_and_receive_packet( next_client_internal_t * cli
             next_mutex_guard( client->notify_mutex );
             next_queue_push( client->notify_queue, notify );            
         }
+        client->counters[NEXT_CLIENT_COUNTER_PACKET_RECEIVED_DIRECT]++;
     }
 #endif // #if NEXT_DIRECT_PACKET_SEQUENCE
     else
@@ -5826,6 +5893,7 @@ bool next_client_internal_pump_commands( next_client_internal_t * client )
                 crypto_box_keypair( client->client_route_public_key, client->client_route_private_key );
                 char buffer[NEXT_MAX_ADDRESS_STRING_LENGTH];
                 next_printf( NEXT_LOG_LEVEL_INFO, "client opened session to %s", next_address_to_string( &open_session_command->server_address, buffer ) );
+                client->counters[NEXT_CLIENT_COUNTER_OPEN_SESSION]++;
             }
             break;
 
@@ -5838,11 +5906,12 @@ bool next_client_internal_pump_commands( next_client_internal_t * client )
                 next_printf( NEXT_LOG_LEVEL_INFO, "client closed session to %s", next_address_to_string( &client->server_address, buffer ) );
 
                 memset( &client->server_address, 0, sizeof(next_address_t) );
-                client->try_before_you_buy = false;
                 client->session_open = false;
                 client->upgraded = false;
                 client->flagged = false;
                 client->fallback_to_direct = false;
+                client->try_before_you_buy = false;
+                client->multipath = false;
                 client->upgrade_sequence = 0;
                 client->session_id = 0;
                 client->send_sequence = 0;
@@ -5882,6 +5951,8 @@ bool next_client_internal_pump_commands( next_client_internal_t * client )
                 next_stats( client->stats, "closed session" );
 
                 next_stats_session_changed( client->stats, 0 );
+
+                client->counters[NEXT_CLIENT_COUNTER_CLOSE_SESSION]++;
             }
             break;
 
@@ -5911,6 +5982,13 @@ bool next_client_internal_pump_commands( next_client_internal_t * client )
     return quit;
 }
 
+#if !NEXT_VERSION_IS_PRESENT
+float next_fake_direct_packet_loss = 0.0f;
+float next_fake_direct_rtt = 0.0f;
+float next_fake_next_packet_loss = 0.0f;
+float next_fake_next_rtt = 0.0f;
+#endif // #if !NEXT_VERSION_IS_PRESENT
+
 void next_client_internal_update_stats( next_client_internal_t * client )
 {
     next_assert( client );
@@ -5930,6 +6008,7 @@ void next_client_internal_update_stats( next_client_internal_t * client )
         client->client_stats.next = network_next;
         client->client_stats.flagged = client->flagged;
         client->client_stats.try_before_you_buy = client->try_before_you_buy;
+        client->client_stats.multipath = client->multipath;
         client->client_stats.platform_id = next_platform_id();
         client->client_stats.connection_type = next_platform_connection_type();
 
@@ -5962,6 +6041,17 @@ void next_client_internal_update_stats( next_client_internal_t * client )
         client->client_stats.direct_jitter = direct_route_stats.jitter;    
         client->client_stats.direct_packet_loss = direct_route_stats.packet_loss;
 
+#if !NEXT_VERSION_IS_PRESENT
+        client->client_stats.direct_min_rtt += next_fake_direct_rtt;
+        client->client_stats.direct_max_rtt += next_fake_direct_rtt;
+        client->client_stats.direct_mean_rtt += next_fake_direct_rtt;
+        client->client_stats.direct_packet_loss += next_fake_direct_packet_loss;
+        client->client_stats.next_min_rtt += next_fake_next_rtt;
+        client->client_stats.next_max_rtt += next_fake_next_rtt;
+        client->client_stats.next_mean_rtt += next_fake_next_rtt;
+        client->client_stats.next_packet_loss += next_fake_next_packet_loss;
+#endif // #if !NEXT_VERSION_IS_PRESENT
+
         next_relay_manager_get_stats( client->near_relay_manager, &client->near_relay_stats );
 
         next_client_notify_stats_updated_t * notify = (next_client_notify_stats_updated_t*) next_malloc( client->context, sizeof( next_client_notify_stats_updated_t ) );
@@ -5981,13 +6071,10 @@ void next_client_internal_update_stats( next_client_internal_t * client )
         NextClientStatsPacket packet;
 
         packet.flagged = client->flagged;
-
         packet.fallback_to_direct = client->fallback_to_direct;
-
         packet.try_before_you_buy = client->try_before_you_buy;
-
+        packet.multipath = client->multipath;
         packet.platform_id = client->client_stats.platform_id;
-
         packet.connection_type = client->client_stats.connection_type;
 
         next_platform_mutex_acquire( client->bandwidth_mutex );
@@ -6060,7 +6147,6 @@ void next_client_internal_update_direct_pings( next_client_internal_t * client )
     if ( client->last_direct_pong_time + NEXT_SESSION_TIMEOUT < current_time && !client->fallback_to_direct )
     {
         next_platform_mutex_acquire( client->route_manager_mutex );
-        next_assert( !client->fallback_to_direct );
         next_route_manager_fallback_to_direct( client->route_manager );
         next_platform_mutex_release( client->route_manager_mutex );
     }
@@ -6158,6 +6244,11 @@ void next_client_internal_update_route_manager( next_client_internal_t * client 
     const bool send_continue_request = next_route_manager_send_continue_request( client->route_manager, &continue_request_to, continue_request_packet_data, &continue_request_packet_bytes );
     next_platform_mutex_release( client->route_manager_mutex );
 
+    if ( !client->fallback_to_direct && fallback_to_direct )
+    {
+        client->counters[NEXT_CLIENT_COUNTER_FALLBACK_TO_DIRECT]++;
+    }
+
     client->fallback_to_direct = fallback_to_direct;
 
     if ( send_route_request )
@@ -6175,6 +6266,9 @@ void next_client_internal_update_route_manager( next_client_internal_t * client 
 
 void next_client_internal_update_try_before_you_buy( next_client_internal_t * client )
 {
+    if ( client->multipath )
+        return;
+
     if ( client->fallback_to_direct )
         return;
     
@@ -6193,6 +6287,19 @@ void next_client_internal_update_try_before_you_buy( next_client_internal_t * cl
     {
         next_printf( NEXT_LOG_LEVEL_INFO, "client try before you buy completed" );
         client->try_before_you_buy = false;
+        client->counters[NEXT_CLIENT_COUNTER_TRY_BEFORE_YOU_BUY_COMPLETED]++;
+    }
+
+    if ( current_time - client->first_next_ping_time > NEXT_TRY_BEFORE_YOU_BUY_ABORT_TIME )
+    {
+        next_printf( NEXT_LOG_LEVEL_INFO, "client try before you buy abort" );
+        next_platform_mutex_acquire( client->route_manager_mutex );
+        next_route_manager_fallback_to_direct( client->route_manager );
+        next_platform_mutex_release( client->route_manager_mutex );
+        client->fallback_to_direct = true;
+        client->counters[NEXT_CLIENT_COUNTER_FALLBACK_TO_DIRECT]++;
+        client->counters[NEXT_CLIENT_COUNTER_TRY_BEFORE_YOU_BUY_ABORT]++;
+        return;
     }
 }
 
@@ -6234,7 +6341,6 @@ struct next_client_t
     next_stats_t * stats;
     bool session_open;
     bool upgraded;
-    bool multipath;
     bool fallback_to_direct;
     uint8_t open_session_sequence;
     uint64_t session_id;
@@ -6245,6 +6351,7 @@ struct next_client_t
     next_client_stats_t client_stats;
     next_bandwidth_limiter_t send_bandwidth;
     next_bandwidth_limiter_t receive_bandwidth;
+    uint64_t counters[NEXT_CLIENT_COUNTER_MAX];
 };
 
 void next_client_destroy( next_client_t * client );
@@ -6390,7 +6497,6 @@ void next_client_close_session( next_client_t * client )
 
     client->session_open = false;
     client->upgraded = false;
-    client->multipath = false;
     client->fallback_to_direct = false;
     client->session_id = 0;    memset( &client->client_stats, 0, sizeof(next_client_stats_t ) );
     memset( &client->server_address, 0, sizeof(next_address_t) );
@@ -6448,16 +6554,6 @@ void next_client_update( next_client_t * client )
             }
             break;
 
-            case NEXT_CLIENT_NOTIFY_DOWNGRADED:
-            {
-                client->upgraded = false;
-                client->multipath = false;
-                client->session_id = 0;
-                next_bandwidth_limiter_reset( &client->send_bandwidth );
-                next_bandwidth_limiter_reset( &client->receive_bandwidth );
-            }
-            break;
-
             case NEXT_CLIENT_NOTIFY_STATS_UPDATED:
             {
                 next_client_notify_stats_updated_t * stats_updated = (next_client_notify_stats_updated_t*) notify;
@@ -6504,9 +6600,18 @@ void next_client_send_packet( next_client_t * client, const uint8_t * packet_dat
     {
         next_platform_mutex_acquire( client->internal->route_manager_mutex );
         const uint64_t send_sequence = next_route_manager_next_send_sequence( client->internal->route_manager );
-        bool send_over_network_next = next_route_manager_has_network_next_route( client->internal->route_manager ) && !client->internal->try_before_you_buy;
-        bool send_direct = !send_over_network_next || client->multipath;
+        bool send_over_network_next = next_route_manager_has_network_next_route( client->internal->route_manager );
+        bool send_direct = !send_over_network_next;
         next_platform_mutex_release( client->internal->route_manager_mutex );
+
+        bool multipath = client->client_stats.multipath;
+        bool try_before_you_buy = client->client_stats.try_before_you_buy;
+
+        if ( send_over_network_next && multipath )
+            send_direct = true;
+
+        if ( try_before_you_buy && !multipath )
+            send_over_network_next = false;
 
         // don't send over network next if we're over the bandwidth budget
 
@@ -6516,26 +6621,23 @@ void next_client_send_packet( next_client_t * client, const uint8_t * packet_dat
 
         const int packet_bits = next_wire_packet_bits( NEXT_HEADER_BYTES + packet_bytes );
 
-        if ( send_over_network_next )
+        bool over_budget = next_bandwidth_limiter_add_packet( &client->send_bandwidth, next_time(), envelope_kbps_up, packet_bits );
+
+        double usage_kbps_up = next_bandwidth_limiter_usage_kbps( &client->send_bandwidth, next_time() );
+
+        next_platform_mutex_acquire( client->internal->bandwidth_mutex );
+        client->internal->bandwidth_over_budget = over_budget;
+        client->internal->bandwidth_usage_kbps_up = usage_kbps_up;
+        next_platform_mutex_release( client->internal->bandwidth_mutex );
+
+        if ( send_over_network_next && over_budget )
         {
-            bool over_budget = next_bandwidth_limiter_add_packet( &client->send_bandwidth, next_time(), envelope_kbps_up, packet_bits );
-
-            double usage_kbps_up = next_bandwidth_limiter_usage_kbps( &client->send_bandwidth, next_time() );
-
-            next_platform_mutex_acquire( client->internal->bandwidth_mutex );
-            client->internal->bandwidth_over_budget = over_budget;
-            client->internal->bandwidth_usage_kbps_up = usage_kbps_up;
-            next_platform_mutex_release( client->internal->bandwidth_mutex );
-
-            if ( over_budget )
-            {   
-                send_over_network_next = false;
-                if ( !client->multipath )
-                {
-                    next_stats( client->stats, "exceeded bandwidth budget" );
-                    next_printf( NEXT_LOG_LEVEL_WARN, "client exceeded bandwidth budget (%d kbps). sending direct instead", envelope_kbps_up );
-                    send_direct = true;
-                }
+            send_over_network_next = false;
+            if ( !multipath )
+            {
+                next_stats( client->stats, "exceeded bandwidth budget" );
+                next_printf( NEXT_LOG_LEVEL_WARN, "client exceeded bandwidth budget (%d kbps). sending direct instead", envelope_kbps_up );
+                send_direct = true;
             }
         }
 
@@ -6552,6 +6654,8 @@ void next_client_send_packet( next_client_t * client, const uint8_t * packet_dat
             next_platform_mutex_release( client->internal->route_manager_mutex );
 
             next_platform_socket_send_packet( client->internal->socket, &next_to, next_packet_data, next_packet_bytes );
+
+            client->counters[NEXT_CLIENT_COUNTER_PACKET_SENT_NEXT]++;
         }
 
         if ( send_direct )
@@ -6567,6 +6671,7 @@ void next_client_send_packet( next_client_t * client, const uint8_t * packet_dat
             next_write_uint64( &p, send_sequence );
             memcpy( buffer+10, packet_data, packet_bytes );
             next_platform_socket_send_packet( client->internal->socket, &client->server_address, buffer, packet_bytes + 10 );
+            client->counters[NEXT_CLIENT_COUNTER_PACKET_SENT_DIRECT]++;
 
 #else // #if NEXT_DIRECT_PACKET_SEQUENCE
 
@@ -6576,6 +6681,7 @@ void next_client_send_packet( next_client_t * client, const uint8_t * packet_dat
             buffer[0] = 0;
             memcpy( buffer+1, packet_data, packet_bytes );
             next_platform_socket_send_packet( client->internal->socket, &client->server_address, buffer, packet_bytes + 1 );
+            client->counters[NEXT_CLIENT_COUNTER_PACKET_SENT_DIRECT]++;
 
 #endif // #if NEXT_DIRECT_PACKET_SEQUENCE
         }
@@ -6588,6 +6694,7 @@ void next_client_send_packet( next_client_t * client, const uint8_t * packet_dat
         buffer[0] = 0;
         memcpy( buffer+1, packet_data, packet_bytes );
         next_platform_socket_send_packet( client->internal->socket, &client->server_address, buffer, packet_bytes + 1 );
+        client->counters[NEXT_CLIENT_COUNTER_PACKET_SENT_DIRECT]++;
     }
 }
 
@@ -6618,10 +6725,9 @@ void next_client_send_packet_direct( next_client_t * client, const uint8_t * pac
         return;
     }
 
+#if NEXT_DIRECT_PACKET_SEQUENCE
     if ( client->upgraded )
     {
-#if NEXT_DIRECT_PACKET_SEQUENCE
-
         next_platform_mutex_acquire( client->internal->route_manager_mutex );
         const uint64_t send_sequence = next_route_manager_next_send_sequence( client->internal->route_manager );
         next_platform_mutex_release( client->internal->route_manager_mutex );
@@ -6635,19 +6741,11 @@ void next_client_send_packet_direct( next_client_t * client, const uint8_t * pac
         next_write_uint64( &p, send_sequence );
         memcpy( buffer+10, packet_data, packet_bytes );
         next_platform_socket_send_packet( client->internal->socket, &client->server_address, buffer, packet_bytes + 10 );
+        client->counters[NEXT_CLIENT_COUNTER_PACKET_SENT_DIRECT]++;
 
-#else // #if NEXT_DIRECT_PACKET_SEQUENCE
-
-        // send [0](payload) style packet direct to server
-
-        uint8_t buffer[1+NEXT_MTU];
-        buffer[0] = 0;
-        memcpy( buffer+1, packet_data, packet_bytes );
-        next_platform_socket_send_packet( client->internal->socket, &client->server_address, buffer, packet_bytes + 1 );
-
-#endif // #if NEXT_DIRECT_PACKET_SEQUENCE
     }
     else
+#endif // #if NEXT_DIRECT_PACKET_SEQUENCE
     {
         // send [0](payload) style packet direct to server
 
@@ -6655,6 +6753,7 @@ void next_client_send_packet_direct( next_client_t * client, const uint8_t * pac
         buffer[0] = 0;
         memcpy( buffer+1, packet_data, packet_bytes );
         next_platform_socket_send_packet( client->internal->socket, &client->server_address, buffer, packet_bytes + 1 );
+        client->counters[NEXT_CLIENT_COUNTER_PACKET_SENT_DIRECT]++;
     }
 }
 
@@ -6687,6 +6786,15 @@ const next_client_stats_t * next_client_stats( next_client_t * client )
 {
     next_assert( client );
     return &client->client_stats;
+}
+
+void next_client_counters( next_client_t * client, uint64_t * counters )
+{
+    uint64_t internal_counters[NEXT_CLIENT_COUNTER_MAX];
+    memcpy( counters, client->counters, sizeof(uint64_t) * NEXT_CLIENT_COUNTER_MAX );
+    memcpy( internal_counters, client->internal->counters, sizeof(uint64_t) * NEXT_CLIENT_COUNTER_MAX );
+    for ( int i = 0; i < NEXT_CLIENT_COUNTER_MAX; ++i )
+        counters[i] += internal_counters[i];
 }
 
 // ---------------------------------------------------------------
@@ -7296,6 +7404,7 @@ struct next_session_entry_t
     uint8_t client_open_session_sequence;
 
     bool stats_flagged;
+    bool stats_multipath;
     bool stats_fallback_to_direct;
     bool stats_try_before_you_buy;
     uint64_t stats_platform_id;
@@ -7487,7 +7596,6 @@ void next_clear_session_entry( next_session_entry_t * entry, const next_address_
     memset( entry, 0, sizeof(next_session_entry_t) );
     entry->address = *address;
     entry->session_id = session_id;
-    entry->next_session_update_time = next_time() + NEXT_SECONDS_BETWEEN_SESSION_UPDATES * next_random_float();
     next_replay_protection_reset( &entry->replay_protection );
     next_replay_protection_reset( &entry->session_replay_protection );
     entry->stats_try_before_you_buy = true;
@@ -8791,7 +8899,9 @@ int next_server_internal_process_packet( next_server_internal_t * server, const 
                 }
 
                 session->stats_flagged = packet.flagged;
+                session->stats_multipath = packet.multipath;
                 session->stats_fallback_to_direct = packet.fallback_to_direct;
+
                 session->stats_platform_id = packet.platform_id;
                 session->stats_connection_type = packet.connection_type;
                 session->stats_kbps_up = packet.kbps_up;
@@ -8910,14 +9020,19 @@ int next_server_internal_process_packet( next_server_internal_t * server, const 
 
             next_printf( NEXT_LOG_LEVEL_DEBUG, "server received session response for %" PRIx64 " (%s)", entry->session_id, update_type );
 
-            if ( packet.multipath )
+            bool multipath = packet.multipath;
+
+            if ( multipath && !entry->multipath )
             {
-                next_printf( NEXT_LOG_LEVEL_DEBUG, "multipath is enabled for session %" PRIx64 " (%s)", entry->session_id );
+                next_printf( NEXT_LOG_LEVEL_DEBUG, "server multipath enabled for session %" PRIx64, entry->session_id );
+                entry->multipath = true;
+                next_platform_mutex_acquire( server->session_mutex );
+                entry->mutex_multipath = true;
+                next_platform_mutex_release( server->session_mutex );
             }
 
             entry->update_dirty = true;
             entry->update_type = (uint8_t) packet.response_type;
-            entry->multipath = packet.multipath;
             entry->update_num_tokens = packet.num_tokens;
             if ( packet.response_type == NEXT_UPDATE_TYPE_ROUTE )
             {
@@ -8936,10 +9051,6 @@ int next_server_internal_process_packet( next_server_internal_t * server, const 
                 entry->session_update_backoff = NEXT_SESSION_UPDATE_BACKOFF_MINIMUM_TIME;
 
             entry->waiting_for_update_response = false;
-
-            next_platform_mutex_acquire( server->session_mutex );
-            entry->mutex_multipath = packet.multipath;
-            next_platform_mutex_release( server->session_mutex );
 
             if ( packet.response_type == NEXT_UPDATE_TYPE_DIRECT )
             {
@@ -9702,8 +9813,17 @@ void next_server_internal_backend_update( next_server_internal_t * server )
 
             next_printf( NEXT_LOG_LEVEL_DEBUG, "server sent session update for %" PRIx64, session->session_id );
 
-            session->next_session_update_time += NEXT_SECONDS_BETWEEN_SESSION_UPDATES;
+            if ( session->next_session_update_time == 0.0 )
+            {
+                session->next_session_update_time = current_time + NEXT_SECONDS_BETWEEN_SESSION_UPDATES;
+            }
+            else
+            {
+                session->next_session_update_time += NEXT_SECONDS_BETWEEN_SESSION_UPDATES;
+            }
+
             session->next_session_resend_time = current_time + NEXT_SESSION_UPDATE_RESEND_TIME;
+
             session->waiting_for_update_response = true;
         }
 
@@ -10122,13 +10242,17 @@ void next_server_send_packet( next_server_t * server, const next_address_t * to_
 
     bool send_zero_byte_direct = true;
     bool send_over_network_next = false;
+#if NEXT_DIRECT_PACKET_SEQUENCE
     bool send_upgraded_direct = false;
+#endif // #if NEXT_DIRECT_PACKET_SEQUENCE
 
     if ( entry )
     {
         bool multipath = false;
         int envelope_kbps_down = 0;
+#if NEXT_DIRECT_PACKET_SEQUENCE
         uint8_t open_session_sequence = 0;
+#endif // #if NEXT_DIRECT_PACKET_SEQUENCE
         uint64_t send_sequence = 0;
         uint64_t session_id = 0;
         uint8_t session_version = 0;
@@ -10142,11 +10266,15 @@ void next_server_send_packet( next_server_t * server, const next_address_t * to_
             multipath = internal_entry->mutex_multipath;
             envelope_kbps_down = internal_entry->mutex_envelope_kbps_down;
             send_zero_byte_direct = false;
-            send_over_network_next = internal_entry->mutex_send_over_network_next && !internal_entry->stats_try_before_you_buy;
+            send_over_network_next = internal_entry->mutex_send_over_network_next && ( !internal_entry->stats_try_before_you_buy || multipath );
+#if NEXT_DIRECT_PACKET_SEQUENCE
             send_upgraded_direct = !send_over_network_next || multipath;
+#endif // #if NEXT_DIRECT_PACKET_SEQUENCE
             send_sequence = internal_entry->mutex_send_sequence++;
             send_sequence |= uint64_t(1) << 63;
+#if NEXT_DIRECT_PACKET_SEQUENCE
             open_session_sequence = internal_entry->client_open_session_sequence;
+#endif // #if NEXT_DIRECT_PACKET_SEQUENCE
             session_id = internal_entry->mutex_session_id;
             session_version = internal_entry->mutex_session_version;
             session_address = internal_entry->mutex_send_address;
@@ -10155,8 +10283,10 @@ void next_server_send_packet( next_server_t * server, const next_address_t * to_
         next_platform_mutex_release( server->internal->session_mutex );
 
 #if !NEXT_DIRECT_PACKET_SEQUENCE
-        send_upgraded_direct = false;
-        send_zero_byte_direct = true;
+        if ( !send_over_network_next || multipath )
+        {
+            send_zero_byte_direct = true;
+        }
 #endif // #if !NEXT_DIRECT_PACKET_SEQUENCE
 
         if ( !send_zero_byte_direct )
@@ -10173,7 +10303,11 @@ void next_server_send_packet( next_server_t * server, const next_address_t * to_
                     if ( !multipath )
                     {
                         next_printf( NEXT_LOG_LEVEL_WARN, "server exceeded bandwidth budget for %" PRIx64 " (%d kbps). sending direct instead", session_id, envelope_kbps_down );
+#if NEXT_DIRECT_PACKET_SEQUENCE
                         send_upgraded_direct = true;
+#else // #if NEXT_DIRECT_PACKET_SEQUENCE
+                        send_zero_byte_direct = true;
+#endif // #if NEXT_DIRECT_PACKET_SEQUENCE
                     }
                 }
             }
@@ -10197,6 +10331,7 @@ void next_server_send_packet( next_server_t * server, const next_address_t * to_
                 next_platform_socket_send_packet( server->internal->socket, &session_address, next_packet_data, next_packet_bytes );
             }
 
+#if NEXT_DIRECT_PACKET_SEQUENCE
             if ( send_upgraded_direct )
             {
                 // [255][open session sequence][packet sequence](payload) style packet direct to client
@@ -10209,6 +10344,7 @@ void next_server_send_packet( next_server_t * server, const next_address_t * to_
                 memcpy( buffer+10, packet_data, packet_bytes );
                 next_platform_socket_send_packet( server->internal->socket, to_address, buffer, packet_bytes + 10 );
             }
+#endif // #if !NEXT_DIRECT_PACKET_SEQUENCE
         }
     }
 

@@ -1,5 +1,5 @@
 /*
-    Network Next SDK 3.3.0
+    Network Next SDK 3.3.1
 
     Copyright © 2017 - 2019 Network Next, Inc.
 
@@ -30,11 +30,11 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define NEXT_VERSION_FULL                                   "3.3.0"
+#define NEXT_VERSION_FULL                                   "3.3.1"
 #define NEXT_VERSION_MAJOR                                      "3"
 #define NEXT_VERSION_MINOR                                      "3"
-#define NEXT_VERSION_PATCH                                      "0"
-#define NEXT_VERSION_GITHUB                             "7f7eacf78"
+#define NEXT_VERSION_PATCH                                      "1"
+#define NEXT_VERSION_GITHUB                             "5b6027af9"
 
 #define NEXT_OK                                                   0
 #define NEXT_ERROR                                               -1
@@ -191,6 +191,7 @@ struct next_client_stats_t
     uint64_t platform_id;
     int connection_type;
     bool try_before_you_buy;
+    bool multipath;
     bool flagged;
     bool next;
     float next_min_rtt;
