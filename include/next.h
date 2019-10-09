@@ -1,5 +1,5 @@
 /*
-    Network Next SDK 3.3.1
+    Network Next SDK 3.3.2
 
     Copyright © 2017 - 2019 Network Next, Inc.
 
@@ -32,11 +32,11 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define NEXT_VERSION_FULL                                   "3.3.1"
+#define NEXT_VERSION_FULL                                   "3.3.2"
 #define NEXT_VERSION_MAJOR                                      "3"
 #define NEXT_VERSION_MINOR                                      "3"
-#define NEXT_VERSION_PATCH                                      "1"
-#define NEXT_VERSION_GITHUB                             "5b6027af9"
+#define NEXT_VERSION_PATCH                                      "2"
+#define NEXT_VERSION_GITHUB                             "7c3ac88ec"
 
 #define NEXT_OK                                                   0
 #define NEXT_ERROR                                               -1
@@ -208,6 +208,8 @@ struct next_client_stats_t
     float direct_packet_loss;
     float kbps_up;
     float kbps_down;
+    uint64_t packets_lost_client_to_server;
+    uint64_t packets_lost_server_to_client;
 };
 
 // -----------------------------------------
