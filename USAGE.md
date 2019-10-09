@@ -43,7 +43,7 @@ https://app.v3.networknext.com
 
 Inside the portal, you can see a map of all players using Network Next, drill into sessions for each live player, and configure your usage of Network Next.
 
-Please reach out to sales@networknext.com to get access and begin your free trial.
+Please reach out to sales@networknext.com to get access to the portal.
 
 ## 3. Generate a private/public keypair
 
