@@ -14,29 +14,34 @@ Usage: `keygen.exe`
 
 ### macOS
 
-You must have libsodium 1.0.18 installed. If you don't, use `brew install libsodium` to install it. If you can't install this version, see "Building from source" below.
-
 Usage: `./keygen_mac`
-
-### Linux (Ubuntu 18.04.2 LTS)
-
-You must have libsodium 1.0.16-2 installed. If you don't, use `sudo apt install libsodium23` to install it. If you can't install this version, see "Building from source" below.
-
-Usage: `./keygen_linux`
-
-## Building from source
-
-### Windows
-
-1. Install MinGW-w64 and make sure GCC is on your path.
-2. `cd src && go build keygen.go keygen_windows.go`
-
-### macOS
-
-1. `brew install libsodium pkg-config`
-2. `cd src && go build keygen.go keygen_unix.go`
 
 ### Linux
 
-1. `sudo apt install pkg-config libsodium-dev libsodium23`
-2. `cd src && go build keygen.go keygen_unix.go`
+Usage: `./keygen_linux`
+
+### ARM
+
+Usage: `./keygen_arm`
+
+## Building from source
+
+### Building on Linux/macOS/ARM
+
+```
+./build.sh
+Building Linux 64-bit... done
+Building ARM 64-bit... done
+Building MacOS 64-bit... done
+Building Windows 64-bit... done
+```
+
+### Building on Windows
+
+```
+./build.bat
+Building Linux 64-bit... done
+Building ARM 64-bit... done
+Building MacOS 64-bit... done
+Building Windows 64-bit... done
+```

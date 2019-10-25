@@ -6,15 +6,22 @@
 package main
 
 import (
+	"crypto/ed25519"
+	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"log"
 )
 
 func main() {
 
-	customerId := GenerateCustomerId()
+	customerId := make([]byte, 8)
+	rand.Read(customerId)
 
-	publicKey, privateKey := KeygenAsymmetric()
+	publicKey, privateKey, err := ed25519.GenerateKey(nil)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	customerPublicKey := make([]byte, 0)
 	customerPublicKey = append(customerPublicKey, customerId...)
