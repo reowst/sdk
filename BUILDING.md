@@ -190,6 +190,8 @@ These instructions are designed for Ubuntu 14.04-18.04.
     ./bin/client
     ```
 
+* [Go to USAGE.md for next steps](https://github.com/networknext/sdk/blob/master/USAGE.md)
+
 ## If you are developing on Docker
 
 And why wouldn't you be? :)
