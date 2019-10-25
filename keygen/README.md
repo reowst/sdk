@@ -39,7 +39,7 @@ Building Windows 64-bit... done
 ### Building on Windows
 
 ```
-./build.bat
+build.bat
 Building Linux 64-bit... done
 Building ARM 64-bit... done
 Building MacOS 64-bit... done
