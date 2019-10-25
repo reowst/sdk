@@ -192,8 +192,7 @@ These instructions are designed for Ubuntu 14.04-18.04.
 
 ## If you are developing on Docker
 
-And why wouldn't you be?
-
+And why wouldn't you be? :)
 
     ```shell
     docker build -t networknext .
