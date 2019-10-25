@@ -194,7 +194,7 @@ These instructions are designed for Ubuntu 14.04-18.04.
 
 And why wouldn't you be? :)
 
-    ```shell
+    shell
     docker build -t networknext .
     docker run -ti --rm networknext bin/server
     docker run -ti --rm networknext bin/client
