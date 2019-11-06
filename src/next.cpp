@@ -1,5 +1,5 @@
 /*
-    Network Next SDK 3.3.2
+    Network Next SDK 3.3.3
 
     Copyright © 2017 - 2019 Network Next, Inc.
 
@@ -87,7 +87,7 @@
 #if 1
 #define NEXT_VERSION_MAJOR_INT                      3
 #define NEXT_VERSION_MINOR_INT                      3
-#define NEXT_VERSION_PATCH_INT                      2
+#define NEXT_VERSION_PATCH_INT                      3
 #else
 #define NEXT_VERSION_MAJOR_INT                                          0
 #define NEXT_VERSION_MINOR_INT                                          0
@@ -5887,7 +5887,7 @@ int next_client_internal_process_network_next_packet( next_client_internal_t * c
                 return NEXT_ERROR;
             }
 
-            const bool already_received = next_replay_protection_already_received( &client->payload_replay_protection, payload_sequence );
+            const bool already_received = next_replay_protection_already_received( &client->payload_replay_protection, payload_sequence ) != 0;
 
             if ( already_received && !multipath )
             {
@@ -6068,6 +6068,9 @@ bool next_client_internal_pump_commands( next_client_internal_t * client )
                 char buffer[NEXT_MAX_ADDRESS_STRING_LENGTH];
                 next_printf( NEXT_LOG_LEVEL_INFO, "client opened session to %s", next_address_to_string( &open_session_command->server_address, buffer ) );
                 client->counters[NEXT_CLIENT_COUNTER_OPEN_SESSION]++;
+                next_platform_mutex_acquire( client->route_manager_mutex );
+                next_route_manager_reset( client->route_manager );
+                next_platform_mutex_release( client->route_manager_mutex );
             }
             break;
 
@@ -6502,23 +6505,32 @@ static next_platform_thread_return_t NEXT_PLATFORM_THREAD_FUNC next_client_inter
 
     bool quit = false;
 
+    double last_update_time = next_time();
+
     while ( !quit )
     {
         next_client_internal_block_and_receive_packet( client );
 
-        next_client_internal_update_direct_pings( client );
+        double current_time = next_time();
 
-        next_client_internal_update_next_pings( client );
+        if ( current_time > last_update_time + 0.01 )
+        {
+            next_client_internal_update_direct_pings( client );
 
-        next_client_internal_send_pings_to_near_relays( client );
+            next_client_internal_update_next_pings( client );
 
-        next_client_internal_update_stats( client );
+            next_client_internal_send_pings_to_near_relays( client );
 
-        next_client_internal_update_route_manager( client );
+            next_client_internal_update_stats( client );
 
-        next_client_internal_update_try_before_you_buy( client );
+            next_client_internal_update_route_manager( client );
 
-        quit = next_client_internal_pump_commands( client );
+            next_client_internal_update_try_before_you_buy( client );
+
+            quit = next_client_internal_pump_commands( client );
+
+            last_update_time = current_time;
+        }
     }
 
     NEXT_PLATFORM_THREAD_RETURN();
@@ -6750,6 +6762,12 @@ void next_client_update( next_client_t * client )
                 next_client_notify_stats_updated_t * stats_updated = (next_client_notify_stats_updated_t*) notify;
                 client->client_stats = stats_updated->stats;
                 client->fallback_to_direct = stats_updated->fallback_to_direct;
+                if ( client->fallback_to_direct && client->upgraded )
+                {
+                    next_printf( NEXT_LOG_LEVEL_DEBUG, "client race condition between fallback to direct and upgrade has occured. clearing upgrade flag to avoid zombie client\n" );
+                    client->upgraded = false;
+                    client->session_id = 0;
+                }
             }
             break;
 
@@ -9977,6 +9995,7 @@ void next_server_internal_backend_update( next_server_internal_t * server )
                 packet.platform_id |= session->platform_id_override & 0xFF;
             }
             packet.platform_id |= session->platform_id_override & ~0xFF;
+            packet.user_id = session->user_id;
             packet.tag = session->tag;
             packet.flagged = session->stats_flagged;
             packet.fallback_to_direct = session->stats_fallback_to_direct;
@@ -10085,21 +10104,30 @@ static next_platform_thread_return_t NEXT_PLATFORM_THREAD_FUNC next_server_inter
 
     bool finished_hostname_resolve = false;
 
+    double last_update_time = next_time();
+
     while ( !quit || !finished_hostname_resolve )
     {
-        finished_hostname_resolve = next_server_internal_update_resolve_hostname( server );
-
         next_server_internal_block_and_receive_packet( server );
 
-        next_server_internal_update_pending_upgrades( server );
+        double current_time = next_time();
 
-        next_server_internal_update_route( server );
+        if ( current_time >= last_update_time + 0.1 )
+        {
+            next_server_internal_update_pending_upgrades( server );
 
-        next_server_internal_update_sessions( server );
+            next_server_internal_update_route( server );
 
-        next_server_internal_backend_update( server );
+            next_server_internal_update_sessions( server );
 
-        quit = next_server_internal_pump_commands( server, quit );
+            next_server_internal_backend_update( server );
+
+            quit = next_server_internal_pump_commands( server, quit );
+
+            finished_hostname_resolve = next_server_internal_update_resolve_hostname( server );
+
+            last_update_time = current_time;
+        }
     }
 
     NEXT_PLATFORM_THREAD_RETURN();
