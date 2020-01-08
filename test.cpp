@@ -1,5 +1,5 @@
 /*
-    Network Next SDK 3.3.4
+    Network Next SDK $(NEXT_VERSION_FULL)
 
     Copyright © 2017 - 2020 Network Next, Inc.
 
@@ -23,59 +23,26 @@
 */
 
 #include "next.h"
+#include <stdio.h>
 
-#ifndef NEXT_MAC_H
-#define NEXT_MAC_H
-
-#if NEXT_PLATFORM == NEXT_PLATFORM_MAC
-
-#include <pthread.h>
-#include <unistd.h>
-
-#define NEXT_PLATFORM_HAS_IPV6                  1
-#define NEXT_PLATFORM_SOCKET_NON_BLOCKING       0
-#define NEXT_PLATFORM_SOCKET_BLOCKING           1
-
-NEXT_PACK_PUSH()
-
-// -------------------------------------
-
-typedef int next_platform_socket_handle_t;
-
-struct next_platform_socket_t
+int main()
 {
-    void * context;
-    next_platform_socket_handle_t handle;
-};
+    next_log_level( NEXT_LOG_LEVEL_NONE );
 
-// -------------------------------------
+    printf( "\nRunning SDK tests:\n\n" );
 
-struct next_platform_thread_t
-{
-    void * context;
-    pthread_t handle;
-};
+    if ( next_init( NULL, NULL ) != NEXT_OK )
+    {
+        printf( "error: failed to initialize network next\n" );
+    }
 
-typedef void * next_platform_thread_return_t;
+    next_test();
 
-#define NEXT_PLATFORM_THREAD_RETURN() do { return NULL; } while ( 0 )
+    next_term();
 
-#define NEXT_PLATFORM_THREAD_FUNC
+    printf( "\n" );
 
-typedef next_platform_thread_return_t (NEXT_PLATFORM_THREAD_FUNC next_platform_thread_func_t)(void*);
+    fflush( stdout );
 
-// -------------------------------------
-
-struct next_platform_mutex_t
-{
-    void * context;
-    pthread_mutex_t handle;
-};
-
-// -------------------------------------
-
-NEXT_PACK_POP()
-
-#endif // #if NEXT_PLATFORM == NEXT_PLATFORM_MAC
-
-#endif // #ifndef NEXT_MAC_H
+    return 0;
+}

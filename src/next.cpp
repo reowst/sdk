@@ -1,7 +1,7 @@
 /*
-    Network Next SDK $(NEXT_VERSION_FULL)
+    Network Next SDK 3.3.4
 
-    Copyright © 2017 - 2019 Network Next, Inc.
+    Copyright © 2017 - 2020 Network Next, Inc.
 
     Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following 
     conditions are met:
@@ -71,7 +71,7 @@
 #define NEXT_SLICE_SECONDS                                             10
 #define NEXT_ROUTE_REQUEST_TIMEOUT                                      5
 #define NEXT_CONTINUE_REQUEST_TIMEOUT                                   5
-#define NEXT_SESSION_UPDATE_RESEND_TIME                              0.25
+#define NEXT_SESSION_UPDATE_RESEND_TIME                               1.0
 #define NEXT_SESSION_UPDATE_TIMEOUT                                     5
 #define NEXT_VERSION_MAJOR_MAX                                        254
 #define NEXT_VERSION_MINOR_MAX                                       1023
@@ -81,15 +81,9 @@
 #define NEXT_TRY_BEFORE_YOU_BUY_ABORT_TIME                           25.0
 #define NEXT_DIRECT_ROUTE_EXPIRE_TIME                                30.0
 
-#ifdef NEXT_VERSION_IS_PRESENT
-#define NEXT_VERSION_MAJOR_INT                      $(NEXT_VERSION_MAJOR)
-#define NEXT_VERSION_MINOR_INT                      $(NEXT_VERSION_MINOR)
-#define NEXT_VERSION_PATCH_INT                      $(NEXT_VERSION_PATCH)
-#else
-#define NEXT_VERSION_MAJOR_INT                                          0
-#define NEXT_VERSION_MINOR_INT                                          0
-#define NEXT_VERSION_PATCH_INT                                          0
-#endif
+#define NEXT_VERSION_MAJOR_INT                                          3
+#define NEXT_VERSION_MINOR_INT                                          3
+#define NEXT_VERSION_PATCH_INT                                          4
 
 #define NEXT_STATS_ENABLED                                              0
 
@@ -12860,12 +12854,13 @@ static void test_backend_packets()
 
 static void test_relay_manager()
 {
-    const int NumRelays = 64;
+    const int MaxRelays = 64;
+    const int NumRelays = 32;
 
-    uint64_t relay_ids[NumRelays];
-    next_address_t relay_addresses[NumRelays];
+    uint64_t relay_ids[MaxRelays];
+    next_address_t relay_addresses[MaxRelays];
 
-    for ( int i = 0; i < NumRelays; ++i )
+    for ( int i = 0; i < MaxRelays; ++i )
     {
         relay_ids[i] = i;
         char address_string[256];
@@ -12884,12 +12879,12 @@ static void test_relay_manager()
 
     // add max relays
     
-    next_relay_manager_update( manager, NEXT_MAX_NEAR_RELAYS, relay_ids, relay_addresses );
+    next_relay_manager_update( manager, NumRelays, relay_ids, relay_addresses );
     {
         next_relay_stats_t stats;
         next_relay_manager_get_stats( manager, &stats );
-        check( stats.num_relays == NEXT_MAX_NEAR_RELAYS );
-        for ( int i = 0; i < NEXT_MAX_NEAR_RELAYS; ++i )
+        check( stats.num_relays == NumRelays );
+        for ( int i = 0; i < NumRelays; ++i )
         {
             check( relay_ids[i] == stats.relay_ids[i] );
         }
@@ -12908,12 +12903,12 @@ static void test_relay_manager()
 
     for ( int j = 0; j < 2; ++j )
     {
-        next_relay_manager_update( manager, NEXT_MAX_NEAR_RELAYS, relay_ids, relay_addresses );
+        next_relay_manager_update( manager, NumRelays, relay_ids, relay_addresses );
         {
             next_relay_stats_t stats;
             next_relay_manager_get_stats( manager, &stats );
-            check( stats.num_relays == NEXT_MAX_NEAR_RELAYS );
-            for ( int i = 0; i < NEXT_MAX_NEAR_RELAYS; ++i )
+            check( stats.num_relays == NumRelays );
+            for ( int i = 0; i < NumRelays; ++i )
             {
                 check( relay_ids[i] == stats.relay_ids[i] );
             }
@@ -12922,12 +12917,12 @@ static void test_relay_manager()
     
     // now add a few new relays, while some relays remain the same
 
-    next_relay_manager_update( manager, NEXT_MAX_NEAR_RELAYS, relay_ids + 4, relay_addresses + 4);
+    next_relay_manager_update( manager, NumRelays, relay_ids + 4, relay_addresses + 4 );
     {
         next_relay_stats_t stats;
         next_relay_manager_get_stats( manager, &stats );
-        check( stats.num_relays == NEXT_MAX_NEAR_RELAYS );
-        for ( int i = 0; i < NEXT_MAX_NEAR_RELAYS; ++i )
+        check( stats.num_relays == NumRelays );
+        for ( int i = 0; i < NumRelays - 4; ++i )
         {
             check( relay_ids[i+4] == stats.relay_ids[i] );
         }
@@ -13208,6 +13203,25 @@ static void test_bandwidth_limiter()
         }
 
         check( over_budget );
+    }
+
+    // make sure we recover
+    {
+        const int kbps_allowed = 1000;
+        const int packet_bits = 50;
+
+        bool recovered = false;
+
+        for ( int i = 0; i < 100; ++i )
+        {
+            if ( next_bandwidth_limiter_add_packet( &bandwidth_limiter, i * ( NEXT_BANDWIDTH_LIMITER_INTERVAL / 10.0 ), kbps_allowed, packet_bits ) )
+            {
+                recovered = true;
+                break;
+            }
+        }
+
+        check( recovered );
     }
 }
 

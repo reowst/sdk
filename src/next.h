@@ -1,7 +1,7 @@
 /*
-    Network Next SDK $(NEXT_VERSION_FULL)
+    Network Next SDK 3.3.4
 
-    Copyright © 2017 - 2019 Network Next, Inc.
+    Copyright © 2017 - 2020 Network Next, Inc.
 
     Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following 
     conditions are met:
@@ -30,11 +30,11 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define NEXT_VERSION_FULL                    "$(NEXT_VERSION_FULL)"
-#define NEXT_VERSION_MAJOR                  "$(NEXT_VERSION_MAJOR)"
-#define NEXT_VERSION_MINOR                  "$(NEXT_VERSION_MINOR)"
-#define NEXT_VERSION_PATCH                  "$(NEXT_VERSION_PATCH)"
-#define NEXT_VERSION_GITHUB                "$(NEXT_VERSION_GITHUB)"
+#define NEXT_VERSION_FULL                                   "3.3.4"
+#define NEXT_VERSION_MAJOR                                      "3"
+#define NEXT_VERSION_MINOR                                      "3"
+#define NEXT_VERSION_PATCH                                      "4"
+#define NEXT_VERSION_GITHUB                             "9afdbd27d"
 
 #define NEXT_OK                                                   0
 #define NEXT_ERROR                                               -1

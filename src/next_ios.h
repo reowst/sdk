@@ -1,7 +1,11 @@
 /*
+<<<<<<< HEAD
     Network Next SDK $(NEXT_VERSION_FULL)
+=======
+    Network Next SDK 3.3.4
+>>>>>>> 25dbfd274a846d2e99a69b64d6dd8e52771f028f
 
-    Copyright © 2017 - 2019 Network Next, Inc.
+    Copyright © 2017 - 2020 Network Next, Inc.
 
     Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following 
     conditions are met:
