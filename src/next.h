@@ -1,5 +1,5 @@
 /*
-    Network Next SDK 3.3.3
+    Network Next SDK $(NEXT_VERSION_FULL)
 
     Copyright © 2017 - 2019 Network Next, Inc.
 
@@ -30,11 +30,11 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define NEXT_VERSION_FULL                                   "3.3.3"
-#define NEXT_VERSION_MAJOR                                      "3"
-#define NEXT_VERSION_MINOR                                      "3"
-#define NEXT_VERSION_PATCH                                      "3"
-#define NEXT_VERSION_GITHUB                             "6cae32007"
+#define NEXT_VERSION_FULL                    "$(NEXT_VERSION_FULL)"
+#define NEXT_VERSION_MAJOR                  "$(NEXT_VERSION_MAJOR)"
+#define NEXT_VERSION_MINOR                  "$(NEXT_VERSION_MINOR)"
+#define NEXT_VERSION_PATCH                  "$(NEXT_VERSION_PATCH)"
+#define NEXT_VERSION_GITHUB                "$(NEXT_VERSION_GITHUB)"
 
 #define NEXT_OK                                                   0
 #define NEXT_ERROR                                               -1
@@ -69,6 +69,18 @@
 
 #define NEXT_PLATFORM_STEAM                                  (1<<9)
 #define NEXT_PLATFORM_EGS                                   (1<<10)
+
+#define NEXT_FLAGS_BAD_ROUTE_TOKEN                           (1<<0)
+#define NEXT_FLAGS_NO_ROUTE_TO_CONTINUE                      (1<<1)
+#define NEXT_FLAGS_PREVIOUS_UPDATE_STILL_PENDING             (1<<2)
+#define NEXT_FLAGS_BAD_CONTINUE_TOKEN                        (1<<3)
+#define NEXT_FLAGS_ROUTE_EXPIRED                             (1<<4)
+#define NEXT_FLAGS_ROUTE_REQUEST_TIMED_OUT                   (1<<5)
+#define NEXT_FLAGS_CONTINUE_REQUEST_TIMED_OUT                (1<<6)
+#define NEXT_FLAGS_CLIENT_TIMED_OUT                          (1<<7)
+#define NEXT_FLAGS_TRY_BEFORE_YOU_BUY_ABORT                  (1<<8)
+#define NEXT_FLAGS_DIRECT_ROUTE_EXPIRED                      (1<<9)
+#define NEXT_FLAGS_COUNT                                         10
 
 #if defined(_WIN32)
 #define NOMINMAX
@@ -169,6 +181,8 @@ NEXT_EXPORT_FUNC void next_assert_function( void (*function)( const char * condi
 
 NEXT_EXPORT_FUNC void next_allocator( void * (*malloc_function)( void * context, size_t bytes ), void (*free_function)( void * context, void * p ) );
 
+NEXT_EXPORT_FUNC const char * next_user_id_string( uint64_t user_id, char * buffer );
+
 // -----------------------------------------
 
 struct next_address_t
@@ -188,6 +202,7 @@ NEXT_EXPORT_FUNC int next_address_equal( const next_address_t * a, const next_ad
 
 struct next_client_stats_t
 {
+    uint64_t flags;
     uint64_t platform_id;
     int connection_type;
     bool try_before_you_buy;
@@ -244,7 +259,7 @@ NEXT_EXPORT_FUNC uint16_t next_server_port( next_server_t * server );
 
 NEXT_EXPORT_FUNC void next_server_update( next_server_t * server );
 
-NEXT_EXPORT_FUNC uint64_t next_server_upgrade_session( next_server_t * server, const next_address_t * address, uint64_t user_id, uint32_t platform_id, const char * tag );
+NEXT_EXPORT_FUNC uint64_t next_server_upgrade_session( next_server_t * server, const next_address_t * address, const char * user_id, uint32_t platform_id, const char * tag );
 
 NEXT_EXPORT_FUNC void next_server_tag_session( next_server_t * server, const next_address_t * address, const char * tag );
 

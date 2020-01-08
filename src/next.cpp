@@ -1,5 +1,5 @@
 /*
-    Network Next SDK 3.3.3
+    Network Next SDK $(NEXT_VERSION_FULL)
 
     Copyright © 2017 - 2019 Network Next, Inc.
 
@@ -73,9 +73,6 @@
 #define NEXT_CONTINUE_REQUEST_TIMEOUT                                   5
 #define NEXT_SESSION_UPDATE_RESEND_TIME                              0.25
 #define NEXT_SESSION_UPDATE_TIMEOUT                                     5
-#define NEXT_SESSION_UPDATE_BACKOFF_MINIMUM_TIME                       30
-#define NEXT_SESSION_UPDATE_BACKOFF_PENALTY_SCALE                       2
-#define NEXT_SESSION_UPDATE_BACKOFF_RECOVERY_SUBTRACT                   1
 #define NEXT_VERSION_MAJOR_MAX                                        254
 #define NEXT_VERSION_MINOR_MAX                                       1023
 #define NEXT_VERSION_PATCH_MAX                                        254
@@ -84,10 +81,10 @@
 #define NEXT_TRY_BEFORE_YOU_BUY_ABORT_TIME                           25.0
 #define NEXT_DIRECT_ROUTE_EXPIRE_TIME                                30.0
 
-#if 1
-#define NEXT_VERSION_MAJOR_INT                      3
-#define NEXT_VERSION_MINOR_INT                      3
-#define NEXT_VERSION_PATCH_INT                      3
+#ifdef NEXT_VERSION_IS_PRESENT
+#define NEXT_VERSION_MAJOR_INT                      $(NEXT_VERSION_MAJOR)
+#define NEXT_VERSION_MINOR_INT                      $(NEXT_VERSION_MINOR)
+#define NEXT_VERSION_PATCH_INT                      $(NEXT_VERSION_PATCH)
 #else
 #define NEXT_VERSION_MAJOR_INT                                          0
 #define NEXT_VERSION_MINOR_INT                                          0
@@ -344,6 +341,15 @@ next_mutex_helper_t::~next_mutex_helper_t()
 
 // -------------------------------------------------------------
 
+bool next_platform_getenv_bool(const char *name)
+{
+    const char *v = next_platform_getenv(name);
+    if (v != NULL && v[0]) {
+        return v[0] == '1' || v[0] == 't' || v[0] == 'T';
+    }
+    return false;
+}
+
 double next_time()
 {
     return next_platform_time();
@@ -469,6 +475,12 @@ void next_print_bytes( const char * label, const uint8_t * data, int data_bytes 
         }
     }
     printf( " (%d bytes)\n", data_bytes );
+}
+
+const char * next_user_id_string( uint64_t user_id, char * buffer )
+{
+    sprintf( buffer, "%" PRIx64, user_id );
+    return buffer;
 }
 
 // -------------------------------------------------------------
@@ -983,7 +995,7 @@ uint64_t next_datacenter_id( const char * name )
 
 uint64_t next_protocol_version()
 {
-    #if 1
+    #ifdef NEXT_VERSION_IS_PRESENT
     return next_hash_string( NEXT_VERSION_FULL );
     #else
     return 0;
@@ -2714,6 +2726,7 @@ void next_packet_loss_tracker_reset( next_packet_loss_tracker_t * tracker )
 
 void next_packet_loss_tracker_packet_received( next_packet_loss_tracker_t * tracker, uint64_t sequence )
 {
+    next_assert( tracker );
     sequence++;
     const int index = int( sequence % NEXT_PACKET_LOSS_TRACKER_HISTORY );
     tracker->received_packets[index] = sequence;
@@ -2722,6 +2735,7 @@ void next_packet_loss_tracker_packet_received( next_packet_loss_tracker_t * trac
 
 int next_packet_loss_tracker_update( next_packet_loss_tracker_t * tracker, next_stats_t * stats )
 {
+    next_assert( tracker );
     int lost_packets = 0;
     uint64_t start = tracker->last_packet_processed + 1;
     uint64_t finish = ( tracker->most_recent_packet_received > NEXT_PACKET_LOSS_TRACKER_SAFETY ) ? ( tracker->most_recent_packet_received - NEXT_PACKET_LOSS_TRACKER_SAFETY ) : 0;
@@ -2937,6 +2951,7 @@ struct NextClientStatsPacket
     bool fallback_to_direct;
     bool try_before_you_buy;
     bool multipath;
+    uint64_t flags;
     uint64_t platform_id;
     int connection_type;
     float kbps_up;
@@ -2972,6 +2987,7 @@ struct NextClientStatsPacket
         serialize_bool( stream, fallback_to_direct );
         serialize_bool( stream, try_before_you_buy );
         serialize_bool( stream, multipath );
+        serialize_bits( stream, flags, NEXT_FLAGS_COUNT );
         serialize_uint64( stream, platform_id );
         serialize_int( stream, connection_type, NEXT_CONNECTION_TYPE_UNKNOWN, NEXT_CONNECTION_TYPE_CELLULAR );
         serialize_float( stream, kbps_up );
@@ -3465,7 +3481,10 @@ void next_post_validate_packet( uint8_t * packet_data, int packet_bytes, void * 
     {
         next_replay_protection_advance_sequence( replay_protection, *sequence );
 
-        next_packet_loss_tracker_packet_received( tracker, *sequence );
+        if ( tracker )
+        {
+            next_packet_loss_tracker_packet_received( tracker, *sequence );
+        }
     }
 }
 
@@ -3601,7 +3620,7 @@ int next_init( void * context, next_config_t * config_in )
     else
     {
         config.disable_network_next = false;
-        config.try_before_you_buy = true;
+        config.try_before_you_buy = !next_platform_getenv_bool("NEXT_DISABLE_TRY_BEFORE_YOU_BUY");
         config.high_priority_server_thread = true;
     }
 
@@ -4661,6 +4680,7 @@ struct next_route_manager_t
     uint64_t send_sequence;
     bool fallback_to_direct;
     next_route_data_t route_data;
+    uint32_t flags;
 };
 
 next_route_manager_t * next_route_manager_create( void * context, next_stats_t * stats )
@@ -4671,7 +4691,7 @@ next_route_manager_t * next_route_manager_create( void * context, next_stats_t *
     memset( route_manager, 0, sizeof(next_route_manager_t) );
     route_manager->context = context;
     route_manager->stats = stats;
-    route_manager->route_data.direct_route_expire_time = next_time() + NEXT_DIRECT_ROUTE_EXPIRE_TIME;
+    route_manager->route_data.direct_route_expire_time = -1.0;
     return route_manager;
 }
 
@@ -4684,12 +4704,15 @@ void next_route_manager_reset( next_route_manager_t * route_manager )
     route_manager->send_sequence = 0;
     route_manager->fallback_to_direct = false;
     memset( &route_manager->route_data, 0, sizeof(next_route_data_t) );
-    route_manager->route_data.direct_route_expire_time = next_time() + NEXT_DIRECT_ROUTE_EXPIRE_TIME;
+    route_manager->route_data.direct_route_expire_time = -1.0;
+    route_manager->flags = 0;
 }
 
-void next_route_manager_fallback_to_direct( next_route_manager_t * route_manager )
+void next_route_manager_fallback_to_direct( next_route_manager_t * route_manager, uint32_t flags )
 {
     next_assert( route_manager );
+
+    route_manager->flags |= flags;
 
     if ( route_manager->fallback_to_direct )
         return;
@@ -4728,6 +4751,7 @@ void next_route_manager_direct_route( next_route_manager_t * route_manager, bool
     memcpy( route_manager->route_data.previous_route_private_key, route_manager->route_data.current_route_private_key, crypto_box_SECRETKEYBYTES );
 
     route_manager->route_data.current_route = false;
+
     route_manager->route_data.direct_route_expire_time = next_time() + NEXT_DIRECT_ROUTE_EXPIRE_TIME;
 }
 
@@ -4745,8 +4769,8 @@ void next_route_manager_begin_next_route( next_route_manager_t * route_manager, 
     next_route_token_t route_token;
     if ( next_read_encrypted_route_token( &p, &route_token, public_key, private_key ) != NEXT_OK )
     {
-        next_printf( NEXT_LOG_LEVEL_ERROR, "client could not read encrypted route token" );
-        next_route_manager_fallback_to_direct( route_manager );
+        next_printf( NEXT_LOG_LEVEL_ERROR, "client received bad route token" );
+        next_route_manager_fallback_to_direct( route_manager, NEXT_FLAGS_BAD_ROUTE_TOKEN );
         return;
     }
 
@@ -4768,6 +4792,7 @@ void next_route_manager_begin_next_route( next_route_manager_t * route_manager, 
     memcpy( route_manager->route_data.pending_route_request_packet_data + 1, tokens + NEXT_ENCRYPTED_ROUTE_TOKEN_BYTES, ( num_tokens - 1 ) * NEXT_ENCRYPTED_ROUTE_TOKEN_BYTES );
     memcpy( route_manager->route_data.pending_route_private_key, route_token.private_key, crypto_box_SECRETKEYBYTES );
     next_assert( route_manager->route_data.pending_route_request_packet_bytes <= NEXT_MAX_PACKET_BYTES );
+    route_manager->route_data.direct_route_expire_time = -1.0;
 }
 
 void next_route_manager_continue_next_route( next_route_manager_t * route_manager, int num_tokens, uint8_t * tokens, const uint8_t * public_key, const uint8_t * private_key )
@@ -4788,7 +4813,7 @@ void next_route_manager_continue_next_route( next_route_manager_t * route_manage
     {
         next_stats( route_manager->stats, "no route to continue" );
         next_printf( NEXT_LOG_LEVEL_ERROR, "client has no route to continue" );
-        next_route_manager_fallback_to_direct( route_manager );
+        next_route_manager_fallback_to_direct( route_manager, NEXT_FLAGS_NO_ROUTE_TO_CONTINUE );
         return;
     }
 
@@ -4796,7 +4821,7 @@ void next_route_manager_continue_next_route( next_route_manager_t * route_manage
     {
         next_stats( route_manager->stats, "previous update still pending" );
         next_printf( NEXT_LOG_LEVEL_ERROR, "client previous update still pending" );
-        next_route_manager_fallback_to_direct( route_manager );
+        next_route_manager_fallback_to_direct( route_manager, NEXT_FLAGS_PREVIOUS_UPDATE_STILL_PENDING );
         return;
     }
 
@@ -4804,9 +4829,9 @@ void next_route_manager_continue_next_route( next_route_manager_t * route_manage
     next_continue_token_t continue_token;
     if ( next_read_encrypted_continue_token( &p, &continue_token, public_key, private_key ) != NEXT_OK )
     {
-        next_stats( route_manager->stats, "could not read encrypted continue token" );
-        next_printf( NEXT_LOG_LEVEL_ERROR, "client could not read encrypted continue token" );
-        next_route_manager_fallback_to_direct( route_manager );
+        next_stats( route_manager->stats, "bad continue token" );
+        next_printf( NEXT_LOG_LEVEL_ERROR, "client received bad continue token" );
+        next_route_manager_fallback_to_direct( route_manager, NEXT_FLAGS_BAD_CONTINUE_TOKEN );
         return;
     }
 
@@ -4817,6 +4842,7 @@ void next_route_manager_continue_next_route( next_route_manager_t * route_manage
     route_manager->route_data.pending_continue_request_packet_data[0] = NEXT_CONTINUE_REQUEST_PACKET;
     memcpy( route_manager->route_data.pending_continue_request_packet_data + 1, tokens + NEXT_ENCRYPTED_CONTINUE_TOKEN_BYTES, ( num_tokens - 1 ) * NEXT_ENCRYPTED_CONTINUE_TOKEN_BYTES );
     next_assert( route_manager->route_data.pending_continue_request_packet_bytes <= NEXT_MAX_PACKET_BYTES );
+    route_manager->route_data.direct_route_expire_time = -1.0;
 }
 
 void next_route_manager_update( next_route_manager_t * route_manager, int update_type, int num_tokens, uint8_t * tokens, const uint8_t * public_key, const uint8_t * private_key )
@@ -4981,7 +5007,7 @@ void next_route_manager_check_for_timeouts( next_route_manager_t * route_manager
     {
         next_stats( route_manager->stats, "route expired" );
         next_printf( NEXT_LOG_LEVEL_ERROR, "client route expired" );
-        next_route_manager_fallback_to_direct( route_manager );
+        next_route_manager_fallback_to_direct( route_manager, NEXT_FLAGS_ROUTE_EXPIRED );
         return;
     }
     
@@ -4989,7 +5015,7 @@ void next_route_manager_check_for_timeouts( next_route_manager_t * route_manager
     {
         next_stats( route_manager->stats, "route request timed out" );
         next_printf( NEXT_LOG_LEVEL_ERROR, "client route request timed out" );
-        next_route_manager_fallback_to_direct( route_manager );
+        next_route_manager_fallback_to_direct( route_manager, NEXT_FLAGS_ROUTE_REQUEST_TIMED_OUT );
         return;
     }
 
@@ -4997,15 +5023,15 @@ void next_route_manager_check_for_timeouts( next_route_manager_t * route_manager
     {
         next_stats( route_manager->stats, "continue request timed out" );
         next_printf( NEXT_LOG_LEVEL_ERROR, "client continue request timed out" );
-        next_route_manager_fallback_to_direct( route_manager );
+        next_route_manager_fallback_to_direct( route_manager, NEXT_FLAGS_CONTINUE_REQUEST_TIMED_OUT );
         return;
     }
 
-    if ( !route_manager->route_data.current_route && route_manager->route_data.direct_route_expire_time <= current_time )
+    if ( route_manager->route_data.direct_route_expire_time >= 0.0 && route_manager->route_data.direct_route_expire_time <= current_time )
     {
         next_stats( route_manager->stats, "direct route expired" );
         next_printf( NEXT_LOG_LEVEL_WARN, "client direct route expired" );
-        next_route_manager_fallback_to_direct( route_manager );
+        next_route_manager_fallback_to_direct( route_manager, NEXT_FLAGS_DIRECT_ROUTE_EXPIRED );
         return;
     }
 }
@@ -5357,9 +5383,9 @@ void next_client_internal_destroy( next_client_internal_t * client );
 
 next_client_internal_t * next_client_internal_create( void * context, next_stats_t * stats )
 {
-    #if 1
+    #ifdef NEXT_VERSION_IS_PRESENT
     next_printf( NEXT_LOG_LEVEL_INFO, "client sdk version is %s", NEXT_VERSION_FULL );
-    #endif // #if 1
+    #endif // #ifdef NEXT_VERSION_IS_PRESENT
 
     next_client_internal_t * client = (next_client_internal_t*) next_malloc( context, sizeof(next_client_internal_t) );
     if ( !client ) 
@@ -6070,6 +6096,7 @@ bool next_client_internal_pump_commands( next_client_internal_t * client )
                 client->counters[NEXT_CLIENT_COUNTER_OPEN_SESSION]++;
                 next_platform_mutex_acquire( client->route_manager_mutex );
                 next_route_manager_reset( client->route_manager );
+                next_route_manager_direct_route( client->route_manager, true );
                 next_platform_mutex_release( client->route_manager_mutex );
             }
             break;
@@ -6183,8 +6210,10 @@ void next_client_internal_update_stats( next_client_internal_t * client )
         next_platform_mutex_acquire( client->route_manager_mutex );
         const bool network_next = client->route_manager->route_data.current_route;
         const bool fallback_to_direct = client->route_manager->fallback_to_direct;
+        const uint64_t flags = client->route_manager->flags;
         next_platform_mutex_release( client->route_manager_mutex );
 
+        client->client_stats.flags = flags;
         client->client_stats.next = network_next;
         client->client_stats.flagged = client->flagged;
         client->client_stats.try_before_you_buy = client->try_before_you_buy;
@@ -6257,6 +6286,7 @@ void next_client_internal_update_stats( next_client_internal_t * client )
     {
         NextClientStatsPacket packet;
 
+        packet.flags = client->client_stats.flags;
         packet.flagged = client->flagged;
         packet.fallback_to_direct = client->fallback_to_direct;
         packet.try_before_you_buy = client->try_before_you_buy;
@@ -6336,7 +6366,7 @@ void next_client_internal_update_direct_pings( next_client_internal_t * client )
     if ( client->last_direct_pong_time + NEXT_SESSION_TIMEOUT < current_time && !client->fallback_to_direct )
     {
         next_platform_mutex_acquire( client->route_manager_mutex );
-        next_route_manager_fallback_to_direct( client->route_manager );
+        next_route_manager_fallback_to_direct( client->route_manager, NEXT_FLAGS_CLIENT_TIMED_OUT );
         next_platform_mutex_release( client->route_manager_mutex );
     }
 }
@@ -6488,7 +6518,7 @@ void next_client_internal_update_try_before_you_buy( next_client_internal_t * cl
     {
         next_printf( NEXT_LOG_LEVEL_INFO, "client try before you buy abort" );
         next_platform_mutex_acquire( client->route_manager_mutex );
-        next_route_manager_fallback_to_direct( client->route_manager );
+        next_route_manager_fallback_to_direct( client->route_manager, NEXT_FLAGS_TRY_BEFORE_YOU_BUY_ABORT );
         next_platform_mutex_release( client->route_manager_mutex );
         client->fallback_to_direct = true;
         client->counters[NEXT_CLIENT_COUNTER_FALLBACK_TO_DIRECT]++;
@@ -6764,7 +6794,6 @@ void next_client_update( next_client_t * client )
                 client->fallback_to_direct = stats_updated->fallback_to_direct;
                 if ( client->fallback_to_direct && client->upgraded )
                 {
-                    next_printf( NEXT_LOG_LEVEL_DEBUG, "client race condition between fallback to direct and upgrade has occured. clearing upgrade flag to avoid zombie client\n" );
                     client->upgraded = false;
                     client->session_id = 0;
                 }
@@ -7197,7 +7226,7 @@ struct next_pending_session_entry_t
 {
     next_address_t address;
     uint64_t session_id;
-    uint64_t user_id;
+    uint64_t user_hash;
     uint64_t platform_id;
     uint64_t tag;
     double upgrade_time;
@@ -7597,11 +7626,12 @@ struct next_session_entry_t
     uint64_t special_send_sequence;
     uint64_t internal_send_sequence;
     uint64_t stats_sequence;
-    uint64_t user_id;
+    uint64_t user_hash;
     uint64_t platform_id_override;
     uint64_t tag;
     uint8_t client_open_session_sequence;
 
+    uint64_t stats_flags;
     bool stats_flagged;
     bool stats_multipath;
     bool stats_fallback_to_direct;
@@ -7635,7 +7665,6 @@ struct next_session_entry_t
     double next_session_update_time;
     double next_session_resend_time;
     double last_client_stats_update;
-    double session_update_backoff;
 
     uint64_t update_sequence;
     bool update_dirty;
@@ -8032,9 +8061,10 @@ struct NextBackendSessionUpdatePacket
     uint64_t customer_id;
     next_address_t server_address;
     uint64_t session_id;
-    uint64_t user_id;
+    uint64_t user_hash;
     uint64_t platform_id;
     uint64_t tag;
+    uint64_t flags;
     bool flagged;
     bool fallback_to_direct;
     bool try_before_you_buy;
@@ -8076,9 +8106,10 @@ struct NextBackendSessionUpdatePacket
         serialize_uint64( stream, customer_id );
         serialize_address( stream, server_address );
         serialize_uint64( stream, session_id );
-        serialize_uint64( stream, user_id );
+        serialize_uint64( stream, user_hash );
         serialize_uint64( stream, platform_id );
         serialize_uint64( stream, tag );
+        serialize_bits( stream, flags, NEXT_FLAGS_COUNT );
         serialize_bool( stream, flagged );
         serialize_bool( stream, fallback_to_direct );
         serialize_bool( stream, try_before_you_buy );
@@ -8123,9 +8154,10 @@ struct NextBackendSessionUpdatePacket
         next_write_uint64( &p, sequence );
         next_write_uint64( &p, customer_id );
         next_write_uint64( &p, session_id );
-        next_write_uint64( &p, user_id );
+        next_write_uint64( &p, user_hash );
         next_write_uint64( &p, platform_id );
         next_write_uint64( &p, tag );
+        next_write_uint32( &p, flags );
         next_write_uint8( &p, (uint8_t) flagged );
         next_write_uint8( &p, (uint8_t) fallback_to_direct );
         next_write_uint8( &p, (uint8_t) try_before_you_buy );
@@ -8395,7 +8427,7 @@ struct next_server_command_upgrade_session_t : public next_server_command_t
 {
     next_address_t address;
     uint64_t session_id;
-    uint64_t user_id;
+    uint64_t user_hash;
     uint64_t platform_id;
     uint64_t tag;
 };
@@ -8506,9 +8538,9 @@ static next_platform_thread_return_t NEXT_PLATFORM_THREAD_FUNC next_server_inter
 
 next_server_internal_t * next_server_internal_create( void * context, const char * server_address_string, const char * bind_address_string, const char * datacenter_string )
 {
-    #if 1
+    #ifdef NEXT_VERSION_IS_PRESENT
     next_printf( NEXT_LOG_LEVEL_INFO, "server sdk version is %s", NEXT_VERSION_FULL );
-    #endif // #if 1
+    #endif // #ifdef NEXT_VERSION_IS_PRESENT
 
     next_assert( server_address_string );
     next_assert( bind_address_string );
@@ -8988,8 +9020,7 @@ int next_server_internal_process_packet( next_server_internal_t * server, const 
                 memcpy( entry->receive_key, server_receive_key, crypto_kx_SESSIONKEYBYTES );
                 memcpy( entry->client_route_public_key, packet.client_route_public_key, crypto_box_PUBLICKEYBYTES );
                 entry->last_client_stats_update = next_time();
-                entry->session_update_backoff = NEXT_SESSION_UPDATE_BACKOFF_MINIMUM_TIME;
-                entry->user_id = pending_entry->user_id;
+                entry->user_hash = pending_entry->user_hash;
                 entry->platform_id_override = pending_entry->platform_id;
                 entry->tag = pending_entry->tag;
                 entry->client_open_session_sequence = packet.client_open_session_sequence;
@@ -9127,6 +9158,7 @@ int next_server_internal_process_packet( next_server_internal_t * server, const 
                     session->stats_try_before_you_buy = false;
                 }
 
+                session->stats_flags |= packet.flags;
                 session->stats_flagged = packet.flagged;
                 session->stats_multipath = packet.multipath;
                 session->stats_fallback_to_direct = packet.fallback_to_direct;
@@ -9276,9 +9308,6 @@ int next_server_internal_process_packet( next_server_internal_t * server, const 
             memcpy( entry->update_near_relay_ids, packet.near_relay_ids, 8 * packet.num_near_relays );
             memcpy( entry->update_near_relay_addresses, packet.near_relay_addresses, sizeof(next_address_t) * packet.num_near_relays );
             entry->update_last_send_time = -1000.0;
-            entry->session_update_backoff -= NEXT_SESSION_UPDATE_BACKOFF_RECOVERY_SUBTRACT;
-            if ( entry->session_update_backoff < NEXT_SESSION_UPDATE_BACKOFF_MINIMUM_TIME )
-                entry->session_update_backoff = NEXT_SESSION_UPDATE_BACKOFF_MINIMUM_TIME;
 
             entry->waiting_for_update_response = false;
 
@@ -9720,7 +9749,7 @@ void next_server_internal_block_and_receive_packet( next_server_internal_t * ser
     }
 }
 
-void next_server_internal_upgrade_session( next_server_internal_t * server, const next_address_t * address, uint64_t session_id, uint64_t user_id, uint32_t platform_id, uint64_t tag )
+void next_server_internal_upgrade_session( next_server_internal_t * server, const next_address_t * address, uint64_t session_id, uint64_t user_hash, uint32_t platform_id, uint64_t tag )
 {
     next_assert( server );
     next_assert( address );
@@ -9754,7 +9783,7 @@ void next_server_internal_upgrade_session( next_server_internal_t * server, cons
         next_assert( !"could not add pending session entry. this should never happen!" );
     }
 
-    entry->user_id = user_id;
+    entry->user_hash = user_hash;
     entry->platform_id = platform_id;
     entry->tag = tag;
 }
@@ -9799,7 +9828,7 @@ bool next_server_internal_pump_commands( next_server_internal_t * server, bool q
             case NEXT_SERVER_COMMAND_UPGRADE_SESSION:
             {
                 next_server_command_upgrade_session_t * upgrade_session = (next_server_command_upgrade_session_t*) command;
-                next_server_internal_upgrade_session( server, &upgrade_session->address, upgrade_session->session_id, upgrade_session->user_id, upgrade_session->platform_id, upgrade_session->tag );
+                next_server_internal_upgrade_session( server, &upgrade_session->address, upgrade_session->session_id, upgrade_session->user_hash, upgrade_session->platform_id, upgrade_session->tag );
             }
             break;
 
@@ -9981,7 +10010,7 @@ void next_server_internal_backend_update( next_server_internal_t * server )
 
         next_session_entry_t * session = &server->session_manager->entries[i];
 
-        if ( session->next_session_update_time <= current_time )
+        if ( session->next_session_update_time >= 0.0 && session->next_session_update_time <= current_time )
         {
             NextBackendSessionUpdatePacket packet;
 
@@ -9995,8 +10024,9 @@ void next_server_internal_backend_update( next_server_internal_t * server )
                 packet.platform_id |= session->platform_id_override & 0xFF;
             }
             packet.platform_id |= session->platform_id_override & ~0xFF;
-            packet.user_id = session->user_id;
+            packet.user_hash = session->user_hash;
             packet.tag = session->tag;
+            packet.flags = session->stats_flags;
             packet.flagged = session->stats_flagged;
             packet.fallback_to_direct = session->stats_fallback_to_direct;
             packet.try_before_you_buy = session->stats_try_before_you_buy;
@@ -10066,10 +10096,9 @@ void next_server_internal_backend_update( next_server_internal_t * server )
 
         if ( session->waiting_for_update_response && session->next_session_update_time - NEXT_SECONDS_BETWEEN_SESSION_UPDATES + NEXT_SESSION_UPDATE_TIMEOUT <= current_time )
         {
-            next_printf( NEXT_LOG_LEVEL_ERROR, "server timed out waiting for backend session response for %" PRIx64 ", trying again in %d seconds", session->session_id, (int) session->session_update_backoff );
-            session->next_session_update_time = current_time + session->session_update_backoff;
-            session->session_update_backoff *= NEXT_SESSION_UPDATE_BACKOFF_PENALTY_SCALE;
+            next_printf( NEXT_LOG_LEVEL_ERROR, "server timed out waiting for backend session response for %" PRIx64, session->session_id );
             session->waiting_for_update_response = false;
+            session->next_session_update_time = -1.0;
         }
     }
 
@@ -10347,7 +10376,7 @@ uint64_t next_generate_session_id()
     return session_id;
 }
 
-uint64_t next_server_upgrade_session( next_server_t * server, const next_address_t * address, uint64_t user_id, uint32_t platform_id, const char * tag )
+uint64_t next_server_upgrade_session( next_server_t * server, const next_address_t * address, const char * user_id, uint32_t platform_id, const char * tag )
 {
     next_assert( server );
     next_assert( server->internal );
@@ -10395,9 +10424,11 @@ uint64_t next_server_upgrade_session( next_server_t * server, const next_address
         next_printf( NEXT_LOG_LEVEL_INFO, "server tagged session %" PRIx64 " as '%s' [%" PRIx64 "]", session_id, tag, tag_id );
     }
 
+    uint64_t user_hash = ( user_id != NULL ) ? next_hash_string( user_id ) : 0;
+
     command->type = NEXT_SERVER_COMMAND_UPGRADE_SESSION;
     command->address = *address;
-    command->user_id = user_id;
+    command->user_hash = user_hash;
     command->platform_id = platform_id;
     command->session_id = session_id;
     command->tag = tag_id;
@@ -10663,8 +10694,8 @@ static void test_time()
 static void test_endian()
 {
     uint32_t value = 0x11223344;
-
-    const char * bytes = (const char*) &value;
+    char bytes[4];
+    memcpy( bytes, &value, 4 );
 
 #if NEXT_LITTLE_ENDIAN
 
@@ -12011,6 +12042,7 @@ static void test_packets()
     {
         NextClientStatsPacket in, out;
         in.try_before_you_buy = true;
+        in.flags = NEXT_FLAGS_BAD_ROUTE_TOKEN | NEXT_FLAGS_DIRECT_ROUTE_EXPIRED;
         in.flagged = true;
         in.fallback_to_direct = true;
         in.platform_id = NEXT_PLATFORM_WINDOWS | NEXT_PLATFORM_EGS;
@@ -12046,6 +12078,7 @@ static void test_packets()
         check( next_read_packet( buffer, packet_bytes, &out, next_encrypted_packets, &out_sequence, private_key, &replay_protection ) == NEXT_CLIENT_STATS_PACKET );
         check( in_sequence == out_sequence + 1 );
         check( in.try_before_you_buy == out.try_before_you_buy );
+        check( in.flags == out.flags );
         check( in.flagged == out.flagged );
         check( in.fallback_to_direct == out.fallback_to_direct );
         check( in.platform_id == out.platform_id );
@@ -12616,9 +12649,10 @@ static void test_backend_packets()
         in.sequence = 10000;
         in.customer_id = 1231234127431LL;
         in.session_id = 1234342431431LL;
-        in.user_id = 11111111;
+        in.user_hash = 11111111;
         in.platform_id = 3;
         in.tag = 0x1231314141;
+        in.flags = NEXT_FLAGS_BAD_ROUTE_TOKEN | NEXT_FLAGS_ROUTE_REQUEST_TIMED_OUT | NEXT_FLAGS_DIRECT_ROUTE_EXPIRED;
         in.flagged = true;
         in.fallback_to_direct = true;
         in.try_before_you_buy = true;
@@ -12656,9 +12690,10 @@ static void test_backend_packets()
         check( in.sequence == out.sequence );
         check( in.customer_id == out.customer_id );
         check( in.session_id == out.session_id );
-        check( in.user_id == out.user_id );
+        check( in.user_hash == out.user_hash );
         check( in.platform_id == out.platform_id );
         check( in.tag == out.tag );
+        check( in.flags == out.flags );
         check( in.flagged == out.flagged );
         check( in.fallback_to_direct == out.fallback_to_direct );
         check( in.try_before_you_buy == out.try_before_you_buy );
@@ -13207,6 +13242,7 @@ static void test_free_retains_context()
 static void test_packet_loss_tracker()
 {
     next_packet_loss_tracker_t tracker;
+    memset( &tracker, 0, sizeof(tracker) );
     next_packet_loss_tracker_reset( &tracker );
 
     check( next_packet_loss_tracker_update( &tracker, NULL ) == 0 );

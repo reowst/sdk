@@ -1,5 +1,5 @@
 /*
-    Network Next SDK 3.3.3
+    Network Next SDK $(NEXT_VERSION_FULL)
 
     Copyright © 2017 - 2019 Network Next, Inc.
 
