@@ -46,6 +46,7 @@ solution "next"
 		defines { "NEXT_SHARED" }
 
 project "next"
+	includedirs { "include" }
 	defines { "NEXT_EXPORT", "SODIUM_STATIC" }
 	links { "sodium" }
 	files {
@@ -87,6 +88,7 @@ project "sodium"
 end
 
 project "client"
+	includedirs { "include" }
 	kind "ConsoleApp"
 	links { "next", "sodium" }
 	files { "client.cpp" }
@@ -101,6 +103,7 @@ project "client"
 		linkoptions { "-framework SystemConfiguration -framework CoreFoundation" }
 
 project "server"
+	includedirs { "include" }
 	kind "ConsoleApp"
 	links { "next", "sodium" }
 	files { "server.cpp" }
@@ -115,6 +118,7 @@ project "server"
 		linkoptions { "-framework SystemConfiguration -framework CoreFoundation" }
 
 project "test"
+	includedirs { "include" }
 	kind "ConsoleApp"
 	links { "next", "sodium" }
 	files { "test.cpp" }
