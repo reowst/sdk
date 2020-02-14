@@ -165,7 +165,7 @@ Not yet. We are actively investigating this as an option. Please contact sales@n
 
 ## Will players be disconnected from my game if Network Next goes down?
 
-No. If our SDK cannot talk to our backend for any reason, players automatically fall back to the public internet and are _free_.
+No. If our SDK cannot talk to our backend for any reason, players automatically fall back to the public internet.
 
 ## Are you hiring?
 
