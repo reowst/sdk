@@ -12,49 +12,40 @@ You should see something like:
 ```
 Welcome to Network Next!
 
-0.009219: info: server sdk version is 3.1.0
-0.009238: info: server started on 127.0.0.1:32202
-0.009250: info: server resolving hostname v3.networknext.com
-0.110721: info: server resolved hostname to 146.148.45.204:40000
+0.009249: info: server sdk version is 3.4.0
+0.009276: info: server datacenter is 'local'
+0.009317: info: server bound to port 32202
+0.009872: info: server started on 127.0.0.1:32202
+0.009882: info: server resolving backend hostname 'v3.networknext.com'
+0.111349: info: server resolved backend hostname to 34.69.211.185:40000
 ```
 
 and:
 ```
+
 Welcome to Network Next!
 
-0.010632: info: client sdk version is 3.1.0
-0.021332: info: client opened session to 127.0.0.1:32202
+0.009428: info: client sdk version is 3.4.0
+0.009503: info: client bound to port 63585
+0.110334: info: client opened session to 127.0.0.1:32202
 ```
 
-At this point the client and server are exchanging packets, but these packets are not accelerated.
+At this point the client and server are exchanging packets, but they are not yet accelerated.
 
-In this non-accelerated mode, Network Next simply prefixes your existing packets with a zero byte:
-```
-[0](regular UDP payload)
-```
+## 2. Create an account on our portal
 
-We call this 'direct mode' and it's what Network Next does by default.
-
-## 2. Create an account on our web portal
-
-To accelerate your application you need access to our web portal:
+Email sales@networknext.com to get access to our portal:
 
 https://app.v3.networknext.com
 
-Inside the portal, you can see a map of all players using Network Next, drill into sessions for each live player, and configure your usage of Network Next.
-
-Email sales@networknext.com to get access to the portal.
-
 ## 3. Generate a private/public keypair
 
-Once you have portal access, the next step is to generate a private/public keypair.
+Once you have portal access, we need to generate a keypair so you can securely request accelerated routes for your players.
 
 Run the keygen tool under the 'keygen' directory in the SDK:
 
 You should see something like:
 ```
-Welcome to Network Next!
-
 This is your public key:
 
     PuOtENNoEI7jewa7Kqvl3SHmRKnn6PzAquBhWO1qTRN0H8eJUzUXuA==
@@ -62,8 +53,6 @@ This is your public key:
 This is your private key:
 
     PuOtENNoEI77YEjPhWbcEGsG5L5dVE7if1KxwRpwvYbBSy5uL1OWJeN7Brsqq+XdIeZEqefo/MCq4GFY7WpNE3Qfx4lTNRe4
-
-IMPORTANT: Save your private key in a secure place and don't share it with anybody, not even us!
 ```
 
 Paste the base64 public key into the web portal "Game Configuration" page and click save.
@@ -80,7 +69,7 @@ static const char * customer_public_key = "PuOtENNoEI7jewa7Kqvl3SHmRKnn6PzAquBhW
 
 ## 4. Client and server running in 'upgraded' mode
 
-Next, rebuild and run the client and server.
+Now rebuild and run the client and server.
 
 You should now see something like:
 ```
@@ -100,4 +89,7 @@ Welcome to Network Next!
 0.064203: info: client upgraded to session 7f127fe26281d1c4
 ```
 
-Your client has been 'upgraded' for possible acceleration by Network Next.
+Your client has now been 'upgraded' and is ready to be accelerated by Network Next.
+
+Please email sales@networknext.com for next steps.
+
