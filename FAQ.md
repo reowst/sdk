@@ -10,7 +10,7 @@ Network Next is a marketplace for premium network transit.
 
 ## Why use Network Next?
 
-Network Next improves the quality of network transit from players around the world to servers hosted in datacenters. Players have lower latency, fewer hitches, and less packet loss when they play over Network Next.
+Players have lower latency, fewer hitches, and less packet loss when your game uses Network Next.
 
 ## How does Network Next work?
 
