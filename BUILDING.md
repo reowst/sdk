@@ -61,7 +61,7 @@ macbook:sdk glenn$ ./bin/server
 
 Welcome to Network Next!
 
-0.009219: info: server sdk version is 3.1.0
+0.009219: info: server sdk version is 3.4.0
 0.009238: info: server started on 127.0.0.1:32202
 0.009250: info: server resolving hostname v3.networknext.com
 0.110721: info: server resolved hostname to 146.148.45.204:40000
@@ -77,7 +77,7 @@ macbook:sdk glenn$ ./bin/client
 
 Welcome to Network Next!
 
-0.010632: info: client sdk version is 3.1.0
+0.010632: info: client sdk version is 3.4.0
 0.021332: info: client opened session to 127.0.0.1:32202
 ```
 
@@ -120,16 +120,18 @@ premake5 vs2019
 ```
 Welcome to Network Next!
 
-0.025304: info: server sdk version is 3.1.0
-0.026550: info: server started on 127.0.0.1:32202
-0.025438: info: server resolving hostname v3.networknext.com
-0.061885: info: server resolved hostname to 35.202.139.187:40000
-```
+0.009202: info: server sdk version is 3.4.0
+0.009228: info: server datacenter is 'local'
+0.009275: info: server bound to port 32202
+0.009860: info: server started on 127.0.0.1:32202
+0.009898: info: server resolving backend hostname 'v3.networknext.com'
+0.111277: info: server resolved backend hostname to 34.69.211.185:40000
 
 ```
 Welcome to Network Next!
 
-0.027818: info: client sdk version is 3.1.0
+0.027818: info: client sdk version is 3.4.0
+0.028082: info: client bound to port 60994
 0.054300: info: client opened session to 127.0.0.1:32202
 ```
 
@@ -193,8 +195,6 @@ These instructions are designed for Ubuntu 14.04-18.04.
 * [Go to USAGE.md for next steps](https://github.com/networknext/sdk/blob/master/USAGE.md)
 
 ## If you are developing on Docker
-
-And why wouldn't you be? :)
 
  ```shell
  docker build -t networknext .
