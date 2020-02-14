@@ -70,7 +70,7 @@ Packets that go over the bandwidth envelope are not accelerated and just take th
 
 ## Can I change the bandwidth envelope over time?
 
-Not yet, but we're actively working on this feature. Expect it very soon.
+Not yet, but we're actively working on this feature.
  
 ## How do I get access to the Network Next portal
 
