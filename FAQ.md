@@ -14,7 +14,7 @@ Players have lower latency, fewer hitches, and less packet loss when your game u
 
 ## How does Network Next work?
 
-Every 10 seconds, suppliers compete on performance and price to carry your game's UDP traffic. Network Next steers your game traffic across this route, changing the route dynamically - _without your players noticing_ - once every 10 seconds if a better or cheaper route becomes available.
+Suppliers compete on performance and price to carry your game's UDP traffic. When the internet is not providing the performance your player needs, Network Next steers your game traffic across this route, changing the route dynamically - _without your players noticing_ - once every 10 seconds when a better or cheaper route becomes available.
 
 ## Does Network Next change the player route all the time?
 
