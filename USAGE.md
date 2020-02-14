@@ -37,19 +37,17 @@ We call this 'direct mode' and it's what Network Next does by default.
 
 ## 2. Create an account on our web portal
 
-To accelerate your application you need access to our web portal: 
+To accelerate your application you need access to our web portal:
 
 https://app.v3.networknext.com
 
 Inside the portal, you can see a map of all players using Network Next, drill into sessions for each live player, and configure your usage of Network Next.
 
-Please reach out to sales@networknext.com to get access to the portal.
+Email sales@networknext.com to get access to the portal.
 
 ## 3. Generate a private/public keypair
 
 Once you have portal access, the next step is to generate a private/public keypair.
-
-This ensures that nobody can request routes that bill to your account, except you.
 
 Run the keygen tool under the 'keygen' directory in the SDK:
 
@@ -68,9 +66,9 @@ This is your private key:
 IMPORTANT: Save your private key in a secure place and don't share it with anybody, not even us!
 ```
 
-Now copy the base64 *public key* and paste it into the "Customer Public Key" entry under "Settings" -> "Game Configuration" in the portal and click save.
+Paste the base64 public key into the web portal "Game Configuration" page and click save.
 
-Next, copy the same private key into server.cpp:
+Next, copy the private key base64 into server.cpp:
 ```
 static const char * customer_private_key = "PuOtENNoEI77YEjPhWbcEGsG5L5dVE7if1KxwRpwvYbBSy5uL1OWJeN7Brsqq+XdIeZEqefo/MCq4GFY7WpNE3Qfx4lTNRe4";
 ```
@@ -79,8 +77,6 @@ and the public key into client.cpp:
 ```
 static const char * customer_public_key = "PuOtENNoEI7jewa7Kqvl3SHmRKnn6PzAquBhWO1qTRN0H8eJUzUXuA==";
 ```
-
-You can also set the server private key the via the environment variable NEXT_CUSTOMER_PRIVATE_KEY, which we _strongly_ recommend past this initial integration step.
 
 ## 4. Client and server running in 'upgraded' mode
 
@@ -104,16 +100,4 @@ Welcome to Network Next!
 0.064203: info: client upgraded to session 7f127fe26281d1c4
 ```
 
-This means the the client has been 'upgraded' for possible acceleration by Network Next.
-
-## 5. Hop on to Discord
-
-Congratulations! You have successfully setup your account and keypair.  
-
-You are ready to begin integration with your game.
-
-At this point, please contact us on the Discord support channel, via the 'Support' menu item in the portal, and we'll guide you through the next steps of your integration.
-
-cheers
-
-_- Glenn Fiedler, CEO, Network Next_
+Your client has been 'upgraded' for possible acceleration by Network Next.
