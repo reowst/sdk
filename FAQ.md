@@ -14,10 +14,6 @@ Players have lower latency, fewer hitches, and less packet loss when your game u
 
 ## How does Network Next work?
 
-Network Next SDK steers UDP game traffic across the best path from players to game servers via centrally planned routing driven by a marketplace bidding system run once every 10 seconds per-player.
-
-## Wait what? Say that again...
-
 Every 10 seconds, suppliers compete on performance and price to carry your game's UDP traffic. Network Next steers your game traffic across this route, changing the route dynamically - _without your players noticing_ - once every 10 seconds if a better or cheaper route becomes available.
 
 ## Does Network Next change the player route all the time?
