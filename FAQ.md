@@ -85,8 +85,8 @@ Network Next is used by [Rocket League](https://rocketleague.com) and we acceler
 We work with top edge computing and infrastructure suppliers such as:
 
 * [Ericsson Edge Gravity](https://edgegravity.ericsson.com)
-* [Limelight](https://limelight.com)
 * [Stackpath](https://stackpath.com)
+* [Limelight](https://limelight.com)
 * [Packet](https://packet.com)
 * [Zenlayer](https://zenlayer.com)
 * [Multiplay](https://multiplay.com)
