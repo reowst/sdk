@@ -78,7 +78,7 @@ Not yet, but we're actively working on this feature. Expect it very soon.
  
 ## How do I get access to the Network Next portal
 
-Please contact us at sales@networknext.com and we'll onboard you for a free trial.
+Please contact us at sales@networknext.com
 
 ## What games use Network Next?
 
