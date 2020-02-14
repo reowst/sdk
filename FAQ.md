@@ -42,7 +42,7 @@ We've seen players with over 1000ms round trip time reduced to less than 50ms an
 
 ## How much does Network Next cost?
 
-The average price per-gigabyte is 10c right now, but because Network Next typically targets only the bottom 10% that need help at any time, the amortized cost is just 1c per-GB.
+The average price per-gigabyte is 14c right now, but because Network Next typically targets only the bottom 10% that need help at any time, the amortized cost is just 1.4c per-GB.
 
 ## Do players have to pay to use Network Next?
 
