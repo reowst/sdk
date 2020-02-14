@@ -6,7 +6,7 @@
 
 ## What is Network Next?
 
-Network Next is a marketplace for premium network transit. 
+Network Next is the marketplace for premium network transit. 
 
 ## Why use Network Next?
 
