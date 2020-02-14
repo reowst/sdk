@@ -14,7 +14,7 @@ For example, Network Next is used by [Rocket League](https://rocketleague.com) a
 
 To use Network Next, games integrate the Network Next SDK with their client and server.
 
-Our SDK just eplaces the sendto/recvfrom API you already use to send UDP packets.
+Our SDK replaces the sendto/recvfrom API you already use to send UDP packets.
 
 To get started, visit [BUILDING.md](https://github.com/networknext/sdk/blob/master/BUILDING.md) for a guide for building the SDK on Windows, Mac and Linux.
 
